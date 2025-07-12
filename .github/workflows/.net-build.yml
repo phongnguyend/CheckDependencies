@@ -1,0 +1,41 @@
+name: .Net Build DotNetCliTool
+
+on:
+  push:
+    paths: 
+      - 'src/**'
+  pull_request:
+    paths: 
+      - 'src/**'
+  workflow_dispatch:
+  
+jobs:
+  build:
+
+    defaults: 
+      run:
+        working-directory: src
+        
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+  
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 8.0.100
+    - name: Build
+      run: dotnet build CheckDependencies.sln --configuration Release 
+
+    - name: Upload CheckNugetPackages.DotNetCliTool
+      uses: actions/upload-artifact@v4
+      with:
+        name: CheckNugetPackages.DotNetCliTool
+        path: src/CheckNugetPackages.DotNetCliTool/nupkg/*.nupkg
+
+    - name: Upload CheckNpmPackages.DotNetCliTool
+      uses: actions/upload-artifact@v4
+      with:
+        name: CheckNpmPackages.DotNetCliTool
+        path: src/CheckNpmPackages.DotNetCliTool/nupkg/*.nupkg

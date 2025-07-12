@@ -9,8 +9,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CheckNpmPackages", "CheckNp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CheckNugetPackages.DotNetCliTool", "CheckNugetPackages.DotNetCliTool\CheckNugetPackages.DotNetCliTool.csproj", "{FB13B063-1915-4C6F-AA7C-072A7AC829E3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DotNetCliTool.Template", "DotNetCliTool.Template\DotNetCliTool.Template.csproj", "{314EF1BC-191A-49DF-AD8D-4BB43CB98C8E}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CheckNpmPackages.DotNetCliTool", "CheckNpmPackages.DotNetCliTool\CheckNpmPackages.DotNetCliTool.csproj", "{D473E5DC-192E-41C1-8F2D-E27EBE9258BB}"
 EndProject
 Global
@@ -31,10 +29,6 @@ Global
 		{FB13B063-1915-4C6F-AA7C-072A7AC829E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FB13B063-1915-4C6F-AA7C-072A7AC829E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FB13B063-1915-4C6F-AA7C-072A7AC829E3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{314EF1BC-191A-49DF-AD8D-4BB43CB98C8E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{314EF1BC-191A-49DF-AD8D-4BB43CB98C8E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{314EF1BC-191A-49DF-AD8D-4BB43CB98C8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{314EF1BC-191A-49DF-AD8D-4BB43CB98C8E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D473E5DC-192E-41C1-8F2D-E27EBE9258BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D473E5DC-192E-41C1-8F2D-E27EBE9258BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D473E5DC-192E-41C1-8F2D-E27EBE9258BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
