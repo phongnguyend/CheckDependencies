@@ -1,0 +1,6 @@
+dotnet tool install CheckNugetPackages.DotNetCliTool --global --add-source ./nupkg
+
+cd D:\Phong.NguyenDoan\GitHub\Practical.CleanArchitecture\src\Microservices
+CheckNugetPackages ./
+
+dotnet tool uninstall CheckNugetPackages.DotNetCliTool --global

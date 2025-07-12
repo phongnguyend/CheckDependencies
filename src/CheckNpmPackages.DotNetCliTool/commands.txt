@@ -1,0 +1,6 @@
+dotnet tool install CheckNpmPackages.DotNetCliTool --global --add-source ./nupkg
+
+cd D:\Phong.NguyenDoan\GitHub\Practical.CleanArchitecture\src\UIs\reactjs
+CheckNpmPackages ./
+
+dotnet tool uninstall CheckNpmPackages.DotNetCliTool --global
