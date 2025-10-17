@@ -1,16 +1,12 @@
 ﻿using System.Xml.Linq;
+using CheckNugetPackages;
+
+// Parse command line parameters
+var parsedArgs = CommandLineParser.ParseParameters(args);
 
 var packages = new List<(string Name, string Version, string Project)>();
 
-var directories = args.Length > 0
-    ? args
-    :
-    [
-        @"D:\Project1\API",
-        @"D:\Project2\API",
-    ];
-
-foreach (var directory in directories)
+foreach (var directory in parsedArgs.Directories)
 {
     var packagesInPackagesConfigureFiles = ScanPackagesInPackagesConfigureFiles(directory);
     var packagesInCsProjectFiles = ScanPackagesInCsProjectFiles(directory);
@@ -35,9 +31,21 @@ var ignoredPackages = new List<string>
     //"Microsoft."
 };
 
-// Generate CSV file
-using (var fileStream = File.Open("packages.csv", FileMode.Create))
+// Generate CSV file if requested
+if (parsedArgs.ReportTypes.Contains("csv"))
 {
+    var csvPath = string.IsNullOrEmpty(parsedArgs.ReportDirectory) 
+        ? "packages.csv" 
+        : Path.Combine(parsedArgs.ReportDirectory, "packages.csv");
+        
+    // Ensure the directory exists for the file path
+    var csvDirectory = Path.GetDirectoryName(csvPath);
+    if (!string.IsNullOrEmpty(csvDirectory))
+    {
+        Directory.CreateDirectory(csvDirectory);
+    }
+
+    using var fileStream = File.Open(csvPath, FileMode.Create);
     using var streamWriter = new StreamWriter(fileStream);
     foreach (var package in packageGroups)
     {
@@ -50,9 +58,21 @@ using (var fileStream = File.Open("packages.csv", FileMode.Create))
     }
 }
 
-// Generate HTML file
-using (var fileStream = File.Open("packages.html", FileMode.Create))
+// Generate HTML file if requested
+if (parsedArgs.ReportTypes.Contains("html"))
 {
+    var htmlPath = string.IsNullOrEmpty(parsedArgs.ReportDirectory) 
+        ? "packages.html" 
+        : Path.Combine(parsedArgs.ReportDirectory, "packages.html");
+        
+    // Ensure the directory exists for the file path
+    var htmlDirectory = Path.GetDirectoryName(htmlPath);
+    if (!string.IsNullOrEmpty(htmlDirectory))
+    {
+        Directory.CreateDirectory(htmlDirectory);
+    }
+
+    using var fileStream = File.Open(htmlPath, FileMode.Create);
     using var streamWriter = new StreamWriter(fileStream);
     streamWriter.WriteLine("<!DOCTYPE html>");
     streamWriter.WriteLine("<html>");
