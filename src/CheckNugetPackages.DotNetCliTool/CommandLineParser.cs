@@ -9,42 +9,41 @@ public static class CommandLineParser
         var directories = new List<string>();
         var reportTypes = new List<string>();
         string? reportDirectory = null;
-        
+
         // Default directories if no arguments provided
         var defaultDirectories = new List<string>
         {
-            @"D:\Project1\API",
-            @"D:\Project2\API",
+            Directory.GetCurrentDirectory()
         };
-        
+
         // Default report types if not specified
         var defaultReportTypes = new List<string> { "csv", "html" };
-        
+
         if (args.Length == 0)
         {
             return new ParsedArguments(defaultDirectories, defaultReportTypes, null);
         }
-        
+
         var i = 0;
-        
+
         // Parse directories (all arguments before first parameter starting with --)
         while (i < args.Length && !args[i].StartsWith("--"))
         {
             directories.Add(args[i]);
             i++;
         }
-        
+
         // If no directories were specified, use defaults
         if (directories.Count == 0)
         {
             directories.AddRange(defaultDirectories);
         }
-        
+
         // Parse parameters
         while (i < args.Length)
         {
             var param = args[i];
-            
+
             if (param == "--report-type")
             {
                 i++; // Move to next argument
@@ -85,13 +84,13 @@ public static class CommandLineParser
                 i++;
             }
         }
-        
+
         // If no report types were specified, use defaults
         if (reportTypes.Count == 0)
         {
             reportTypes.AddRange(defaultReportTypes);
         }
-        
+
         return new ParsedArguments(directories, reportTypes, reportDirectory);
     }
 }
