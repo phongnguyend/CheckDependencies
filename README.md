@@ -4,8 +4,8 @@ A collection of .NET CLI tools to scan and generate reports for package dependen
 
 ## Tools
 
-- **CheckNugetPackages** - Scans .NET projects for NuGet package dependencies - [NuGet Package](https://www.nuget.org/packages/CheckNugetPackages.DotNetCliTool)
-- **CheckNpmPackages** - Scans Node.js projects for npm package dependencies - [NuGet Package](https://www.nuget.org/packages/CheckNpmPackages.DotNetCliTool)
+- **CheckNugetPackages** - Scans .NET projects for NuGet package dependencies.
+- **CheckNpmPackages** - Scans Node.js projects for npm package dependencies.
 
 ## Installation
 
@@ -168,45 +168,6 @@ CheckNpmPackages "C:\Project1\ClientApp" "C:\Project2\ClientApp" --report-direct
 - Automatically skips `node_modules` directories
 - Ignores local file dependencies (starting with `file:`)
 - Generates links to npmjs.com package pages
-
-## Building from Source
-
-### Prerequisites
-
-- .NET 8 SDK or later
-
-### Build
-
-```bash
-# Clone the repository
-git clone https://github.com/phongnguyend/CheckDependencies.git
-cd CheckDependencies
-
-# Build the solution
-dotnet build
-
-# Build specific project
-dotnet build src/CheckNugetPackages.DotNetCliTool
-dotnet build src/CheckNpmPackages.DotNetCliTool
-```
-
-### Package
-
-```bash
-# Package for NuGet
-dotnet pack src/CheckNugetPackages.DotNetCliTool
-dotnet pack src/CheckNpmPackages.DotNetCliTool
-```
-
-The `.nupkg` files will be created in the `nupkg` folder of each project.
-
-### Local Installation
-
-```bash
-# Install from local package
-dotnet tool install --global --add-source ./src/CheckNugetPackages.DotNetCliTool/nupkg CheckNugetPackages.DotNetCliTool
-dotnet tool install --global --add-source ./src/CheckNpmPackages.DotNetCliTool/nupkg CheckNpmPackages.DotNetCliTool
-```
 
 ## Use Cases
 
