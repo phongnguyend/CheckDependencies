@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackAsTool>true</PackAsTool>
-    <ToolCommandName>CheckNugetPackages</ToolCommandName>
+    <ToolCommandName>CheckNugetPackagesMcp</ToolCommandName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
     <Version>2.2.0</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -20,6 +20,11 @@
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.2" />
+    <PackageReference Include="ModelContextProtocol" Version="0.7.0-preview.1" />
   </ItemGroup>
 
   <ItemGroup>
