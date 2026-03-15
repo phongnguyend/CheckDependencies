@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace CheckNugetPackages;
@@ -15,6 +16,12 @@ public static class NugetLicenseResolver
     };
 
     private const string RegistrationBaseUrl = "https://api.nuget.org/v3/registration5-gz-semver2";
+    private const string CacheFileName = ".CheckNugetPackagesCache";
+
+    private static readonly JsonSerializerOptions CacheJsonOptions = new()
+    {
+        WriteIndented = true
+    };
 
     public static async Task<Dictionary<(string Name, string Version), string?>> GetLicensesAsync(
         IEnumerable<(string Name, string Version)> packages)
@@ -22,27 +29,103 @@ public static class NugetLicenseResolver
         var distinct = packages.Distinct().ToList();
         var results = new Dictionary<(string Name, string Version), string?>();
 
-        // Use SemaphoreSlim to limit concurrent requests
-        using var semaphore = new SemaphoreSlim(10);
-        var tasks = distinct.Select(async package =>
-        {
-            await semaphore.WaitAsync();
-            try
-            {
-                var license = await GetLicenseAsync(package.Name, package.Version);
-                lock (results)
-                {
-                    results[package] = license;
-                }
-            }
-            finally
-            {
-                semaphore.Release();
-            }
-        });
+        // Load cache
+        var cache = LoadCache();
 
-        await Task.WhenAll(tasks);
+        // Determine which packages need fetching
+        var toFetch = new List<(string Name, string Version)>();
+        foreach (var package in distinct)
+        {
+            if (cache.TryGetValue(package.Name, out var versions) &&
+                versions.TryGetValue(package.Version, out var cachedLicense))
+            {
+                results[package] = cachedLicense;
+            }
+            else
+            {
+                toFetch.Add(package);
+            }
+        }
+
+        if (toFetch.Count > 0)
+        {
+            // Use SemaphoreSlim to limit concurrent requests
+            using var semaphore = new SemaphoreSlim(10);
+            var tasks = toFetch.Select(async package =>
+            {
+                await semaphore.WaitAsync();
+                try
+                {
+                    var license = await GetLicenseAsync(package.Name, package.Version);
+                    lock (results)
+                    {
+                        results[package] = license;
+                    }
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
+            });
+
+            await Task.WhenAll(tasks);
+        }
+
+        // Update cache with new results and save only if there were new fetches
+        if (toFetch.Count > 0)
+        {
+            foreach (var (key, license) in results)
+            {
+                if (!cache.TryGetValue(key.Name, out var versions))
+                {
+                    versions = new Dictionary<string, string?>();
+                    cache[key.Name] = versions;
+                }
+
+                versions[key.Version] = license;
+            }
+
+            SaveCache(cache);
+        }
+
         return results;
+    }
+
+    private static Dictionary<string, Dictionary<string, string?>> LoadCache()
+    {
+        try
+        {
+            if (File.Exists(CacheFileName))
+            {
+                var json = File.ReadAllText(CacheFileName);
+                return JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string?>>>(json) ?? [];
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Warning: Failed to load license cache: {ex.Message}");
+        }
+
+        return [];
+    }
+
+    private static void SaveCache(Dictionary<string, Dictionary<string, string?>> cache)
+    {
+        try
+        {
+            var ordered = cache
+                .OrderBy(p => p.Key)
+                .ToDictionary(
+                    p => p.Key,
+                    p => p.Value.OrderBy(v => v.Key).ToDictionary(v => v.Key, v => v.Value));
+
+            var json = JsonSerializer.Serialize(ordered, CacheJsonOptions);
+            File.WriteAllText(CacheFileName, json);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Warning: Failed to save license cache: {ex.Message}");
+        }
     }
 
     private static async Task<string?> GetLicenseAsync(string packageName, string? version)
