@@ -1,4 +1,4 @@
 ﻿using CheckNugetPackages;
 
 var parsedArgs = CommandLineParser.ParseParameters(args);
-PackageScanner.Run(parsedArgs);
+await PackageScanner.RunAsync(parsedArgs);

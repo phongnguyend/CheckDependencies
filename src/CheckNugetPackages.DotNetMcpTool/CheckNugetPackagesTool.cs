@@ -7,7 +7,7 @@ namespace CheckNugetPackages.DotNetMcpTool;
 public class CheckNugetPackagesTool
 {
     [McpServerTool(Name = "CheckNugetPackages"), Description("Scan and generate reports for Nuget package dependencies in projects")]
-    public static void Process(
+    public static async Task ProcessAsync(
         [Description("One or more directory paths to scan for NuGet packages. If not provided, scans current directory.")] 
         string[]? directories = null,
         [Description("Report types to generate (valid values: csv, html). If not provided, generates both CSV and HTML reports.")] 
@@ -21,6 +21,6 @@ public class CheckNugetPackagesTool
             ReportDirectory: reportDirectory
         );
         
-        PackageScanner.Run(parsedArgs);
+        await PackageScanner.RunAsync(parsedArgs);
     }
 }

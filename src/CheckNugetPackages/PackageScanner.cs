@@ -4,7 +4,7 @@ namespace CheckNugetPackages;
 
 public class PackageScanner
 {
-    public static void Run(ParsedArguments arguments)
+    public static async Task RunAsync(ParsedArguments arguments)
     {
         var packages = new List<(string Name, string Version, string Project)>();
 
@@ -16,13 +16,20 @@ public class PackageScanner
             packages.AddRange(packagesInCsProjectFiles);
         }
 
+        // Fetch license information from NuGet API
+        Console.WriteLine("Fetching license information from NuGet API...");
+        var licenseMap = await NugetLicenseResolver.GetLicensesAsync(
+            packages.Select(p => (p.Name, p.Version)).Distinct());
+        Console.WriteLine("License information fetched.");
+
         var packageGroups = packages.GroupBy(x => new { x.Name, x.Version })
             .Select(g => new
             {
                 g.Key.Name,
                 g.Key.Version,
                 Projects = string.Join(", ", g.Select(x => x.Project)),
-                Url = $"https://www.nuget.org/packages/{g.Key.Name}/{g.Key.Version}"
+                Url = $"https://www.nuget.org/packages/{g.Key.Name}/{g.Key.Version}",
+                License = licenseMap.TryGetValue((g.Key.Name, g.Key.Version), out var license) ? license : null
             })
             .OrderBy(x => x.Name)
             .ThenBy(x => x.Version).ToList();
@@ -56,7 +63,8 @@ public class PackageScanner
                     continue;
                 }
 
-                streamWriter.WriteLine($"{package.Name},{package.Version}, ,\"{package.Url}\",\"{package.Projects}\"");
+                var licenseValue = package.License ?? "";
+                streamWriter.WriteLine($"{package.Name},{package.Version},\"{licenseValue}\",\"{package.Url}\",\"{package.Projects}\"");
             }
         }
 
@@ -91,6 +99,7 @@ public class PackageScanner
             streamWriter.WriteLine("        .package-name { font-weight: bold; }");
             streamWriter.WriteLine("        .version { font-family: monospace; }");
             streamWriter.WriteLine("        .version a { color: #0366d6; font-family: monospace; }");
+            streamWriter.WriteLine("        .license { font-size: 0.9em; }");
             streamWriter.WriteLine("        .projects { font-size: 0.9em; color: #666; }");
             streamWriter.WriteLine("    </style>");
             streamWriter.WriteLine("</head>");
@@ -102,6 +111,7 @@ public class PackageScanner
             streamWriter.WriteLine("            <tr>");
             streamWriter.WriteLine("                <th>Name</th>");
             streamWriter.WriteLine("                <th>Version</th>");
+            streamWriter.WriteLine("                <th>License</th>");
             streamWriter.WriteLine("                <th>Projects</th>");
             streamWriter.WriteLine("            </tr>");
             streamWriter.WriteLine("        </thead>");
@@ -114,9 +124,12 @@ public class PackageScanner
                     continue;
                 }
 
+                var licenseHtml = FormatLicenseHtml(package.License);
+
                 streamWriter.WriteLine("            <tr>");
                 streamWriter.WriteLine($"                <td class=\"package-name\">{System.Net.WebUtility.HtmlEncode(package.Name)}</td>");
                 streamWriter.WriteLine($"                <td class=\"version\"><a href=\"{package.Url}\" target=\"_blank\">{System.Net.WebUtility.HtmlEncode(package.Version ?? "N/A")}</a></td>");
+                streamWriter.WriteLine($"                <td class=\"license\">{licenseHtml}</td>");
                 streamWriter.WriteLine($"                <td class=\"projects\">{System.Net.WebUtility.HtmlEncode(package.Projects)}</td>");
                 streamWriter.WriteLine("            </tr>");
             }
@@ -128,6 +141,20 @@ public class PackageScanner
         }
 
         //Console.ReadLine();
+
+        static string FormatLicenseHtml(string? license)
+        {
+            if (string.IsNullOrWhiteSpace(license))
+                return "N/A";
+
+            if (license.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                license.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                return $"<a href=\"{System.Net.WebUtility.HtmlEncode(license)}\" target=\"_blank\">View License</a>";
+            }
+
+            return System.Net.WebUtility.HtmlEncode(license);
+        }
 
         static List<(string Name, string Version, string Project)> ScanPackagesInPackagesConfigureFiles(string directory)
         {
