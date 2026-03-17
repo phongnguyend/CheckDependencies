@@ -13,6 +13,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CheckNugetPackages", "Check
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CheckNpmPackages", "CheckNpmPackages\CheckNpmPackages.csproj", "{1525F5A2-63D2-49C9-8829-9049388B2D0A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Npm", "Npm", "{60744EBA-E6D8-4BA0-934F-8C7CFB9C284B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Nuget", "Nuget", "{F5DE7596-02A5-435C-B8A9-9BBF43E5A355}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,6 +46,13 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{FB13B063-1915-4C6F-AA7C-072A7AC829E3} = {F5DE7596-02A5-435C-B8A9-9BBF43E5A355}
+		{D473E5DC-192E-41C1-8F2D-E27EBE9258BB} = {60744EBA-E6D8-4BA0-934F-8C7CFB9C284B}
+		{AA84DFF5-129A-4ACC-8764-B2EF80BDD5DE} = {F5DE7596-02A5-435C-B8A9-9BBF43E5A355}
+		{B21A549D-10AF-4373-B404-F939473CDDEB} = {F5DE7596-02A5-435C-B8A9-9BBF43E5A355}
+		{1525F5A2-63D2-49C9-8829-9049388B2D0A} = {60744EBA-E6D8-4BA0-934F-8C7CFB9C284B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C2C7166C-6422-43BA-8EED-ED72DB26DE96}
