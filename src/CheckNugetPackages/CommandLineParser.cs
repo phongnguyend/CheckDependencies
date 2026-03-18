@@ -17,7 +17,7 @@ public static class CommandLineParser
         };
 
         // Default report types if not specified
-        var defaultReportTypes = new List<string> { "csv", "html" };
+        var defaultReportTypes = new List<string> { "csv", "html", "md" };
 
         if (args.Length == 0)
         {
@@ -51,7 +51,7 @@ public static class CommandLineParser
                 while (i < args.Length && !args[i].StartsWith("--"))
                 {
                     var reportType = args[i].ToLowerInvariant();
-                    if (reportType == "csv" || reportType == "html")
+                    if (reportType == "csv" || reportType == "html" || reportType == "md")
                     {
                         if (!reportTypes.Contains(reportType))
                         {
@@ -60,7 +60,7 @@ public static class CommandLineParser
                     }
                     else
                     {
-                        Console.WriteLine($"Warning: Invalid report type '{args[i]}'. Valid values are 'csv' and 'html'.");
+                        Console.WriteLine($"Warning: Invalid report type '{args[i]}'. Valid values are 'csv', 'html', and 'md'.");
                     }
                     i++;
                 }

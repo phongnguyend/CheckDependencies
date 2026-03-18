@@ -36,8 +36,9 @@ public static class NpmLicenseResolver
         var toFetch = new List<(string Name, string Version)>();
         foreach (var package in distinct)
         {
+            var formattedVersion = FormatVersion(package.Version);
             if (cache.TryGetValue(package.Name, out var versions) &&
-                versions.TryGetValue(package.Version, out var cachedLicense))
+                versions.TryGetValue(formattedVersion, out var cachedLicense))
             {
                 results[package] = cachedLicense;
             }
@@ -73,13 +74,14 @@ public static class NpmLicenseResolver
             // Update cache with new results and save only if there were new fetches
             foreach (var (key, license) in results)
             {
+                var formattedVersion = FormatVersion(key.Version);
                 if (!cache.TryGetValue(key.Name, out var versions))
                 {
                     versions = new Dictionary<string, string?>();
                     cache[key.Name] = versions;
                 }
 
-                versions[key.Version] = license;
+                versions[formattedVersion] = license;
             }
 
             SaveCache(cache);

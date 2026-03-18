@@ -71,8 +71,8 @@ CheckNugetPackages [directories...] [options]
 - `directories` - One or more directory paths to scan (all arguments before first `--` parameter)
 
 **Options:**
-- `--report-type <types>` - Report types to generate (default: `csv html`)
-  - Valid values: `csv`, `html`
+- `--report-type <types>` - Report types to generate (default: `csv html md`)
+  - Valid values: `csv`, `html`, `md`
   - Can specify multiple types separated by spaces
 - `--report-directory <path>` - Directory where reports will be saved (default: current directory)
 
@@ -85,11 +85,14 @@ CheckNugetPackages "C:\MyProject" --report-type csv
 # Generate only HTML report
 CheckNugetPackages "C:\MyProject" --report-type html
 
+# Generate only Markdown report
+CheckNugetPackages "C:\MyProject" --report-type md
+
 # Specify output directory
 CheckNugetPackages "C:\MyProject" --report-directory "C:\Reports"
 
 # Scan multiple directories with custom output
-CheckNugetPackages "C:\Project1" "C:\Project2" --report-type csv html --report-directory "output"
+CheckNugetPackages "C:\Project1" "C:\Project2" --report-type csv html md --report-directory "output"
 
 # Generate CSV report in a specific directory
 CheckNugetPackages "C:\MyProject\API" "C:\MyProject\Services" --report-type csv --report-directory "reports"
@@ -99,8 +102,9 @@ CheckNugetPackages "C:\MyProject\API" "C:\MyProject\Services" --report-type csv 
 
 The tool generates the following files:
 
-- **packages.csv** - CSV format with columns: Name, Version, URL, Projects
+- **packages.csv** - CSV format with columns: Name, Version, License, URL, Projects
 - **packages.html** - HTML report with formatted table and links to NuGet.org
+- **packages.md** - Markdown report with table and links to NuGet.org
 
 #### Sample CSV Output
 
@@ -116,6 +120,12 @@ The HTML report includes:
 - Direct links to NuGet.org package pages
 - List of projects using each package version
 - Generation timestamp
+
+#### Sample Markdown Output
+
+The Markdown report includes:
+- Header with generation timestamp
+- Table with package name, version (linked to NuGet.org), license, and projects
 
 ### CheckNpmPackages
 
@@ -141,8 +151,9 @@ CheckNpmPackages [directories...] [options]
 - `directories` - One or more directory paths to scan
 
 **Options:**
-- `--report-type <types>` - Report types to generate (default: `csv`)
-  - Valid values: `csv`
+- `--report-type <types>` - Report types to generate (default: `csv html md`)
+  - Valid values: `csv`, `html`, `md`
+  - Can specify multiple types separated by spaces
 - `--report-directory <path>` - Directory where reports will be saved (default: current directory)
 
 #### Examples
@@ -150,6 +161,9 @@ CheckNpmPackages [directories...] [options]
 ```bash
 # Scan and generate report
 CheckNpmPackages "C:\MyProject\ClientApp"
+
+# Generate only Markdown report
+CheckNpmPackages "C:\MyProject\ClientApp" --report-type md
 
 # Specify output directory
 CheckNpmPackages "C:\MyProject" --report-directory "C:\Reports"
@@ -160,7 +174,9 @@ CheckNpmPackages "C:\Project1\ClientApp" "C:\Project2\ClientApp" --report-direct
 
 #### Output Files
 
-- **packages.csv** - CSV format with columns: Name, Version, URL, Projects
+- **packages.csv** - CSV format with columns: Name, Version, License, URL, Projects
+- **packages.html** - HTML report with formatted table and links to npmjs.com
+- **packages.md** - Markdown report with table and links to npmjs.com
 
 #### Features
 

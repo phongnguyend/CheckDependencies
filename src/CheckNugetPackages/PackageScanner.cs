@@ -140,7 +140,66 @@ public class PackageScanner
             streamWriter.WriteLine("</html>");
         }
 
+        // Generate Markdown file if requested
+        if (arguments.ReportTypes.Contains("md"))
+        {
+            var mdPath = string.IsNullOrEmpty(arguments.ReportDirectory)
+                ? "packages.md"
+                : Path.Combine(arguments.ReportDirectory, "packages.md");
+
+            // Ensure the directory exists for the file path
+            var mdDirectory = Path.GetDirectoryName(mdPath);
+            if (!string.IsNullOrEmpty(mdDirectory))
+            {
+                Directory.CreateDirectory(mdDirectory);
+            }
+
+            using var fileStream = File.Open(mdPath, FileMode.Create);
+            using var streamWriter = new StreamWriter(fileStream);
+            streamWriter.WriteLine("# NuGet Packages Report");
+            streamWriter.WriteLine();
+            streamWriter.WriteLine($"Generated on: {DateTime.Now:yyyy-MM-dd HH:mm:ss zzz}");
+            streamWriter.WriteLine();
+            streamWriter.WriteLine("| Name | Version | License | Projects |");
+            streamWriter.WriteLine("| ---- | ------- | ------- | -------- |");
+
+            foreach (var package in packageGroups)
+            {
+                if (ignoredPackages.Any(package.Name.StartsWith))
+                {
+                    continue;
+                }
+
+                var licenseMd = FormatLicenseMarkdown(package.License);
+                var versionMd = $"[{EscapeMarkdown(package.Version ?? "N/A")}]({package.Url})";
+
+                streamWriter.WriteLine($"| {EscapeMarkdown(package.Name)} | {versionMd} | {licenseMd} | {EscapeMarkdown(package.Projects)} |");
+            }
+        }
+
         //Console.ReadLine();
+
+        static string FormatLicenseMarkdown(string? license)
+        {
+            if (string.IsNullOrWhiteSpace(license))
+                return "N/A";
+
+            if (license.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                license.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                return $"[View License]({license})";
+            }
+
+            return EscapeMarkdown(license);
+        }
+
+        static string EscapeMarkdown(string? value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return "";
+
+            return value.Replace("|", "\\|");
+        }
 
         static string FormatLicenseHtml(string? license)
         {
