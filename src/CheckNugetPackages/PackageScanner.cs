@@ -26,15 +26,13 @@ public class PackageScanner
             .Select(g =>
             {
                 var info = packageInfoMap.TryGetValue((g.Key.Name, g.Key.Version), out var pi) ? pi : null;
-                return new
-                {
+                return new PackageEntry(
                     g.Key.Name,
                     g.Key.Version,
-                    Projects = string.Join(", ", g.Select(x => x.Project)),
-                    Url = $"https://www.nuget.org/packages/{g.Key.Name}/{g.Key.Version}",
-                    License = info?.License,
-                    PublishedDate = info?.PublishedDate
-                };
+                    string.Join(", ", g.Select(x => x.Project)),
+                    $"https://www.nuget.org/packages/{g.Key.Name}/{g.Key.Version}",
+                    info?.License,
+                    info?.PublishedDate);
             })
             .OrderBy(x => x.Name)
             .ThenBy(x => x.Version).ToList();
@@ -52,26 +50,7 @@ public class PackageScanner
                 ? "packages.csv"
                 : Path.Combine(arguments.ReportDirectory, "packages.csv");
 
-            // Ensure the directory exists for the file path
-            var csvDirectory = Path.GetDirectoryName(csvPath);
-            if (!string.IsNullOrEmpty(csvDirectory))
-            {
-                Directory.CreateDirectory(csvDirectory);
-            }
-
-            using var fileStream = File.Open(csvPath, FileMode.Create);
-            using var streamWriter = new StreamWriter(fileStream);
-            foreach (var package in packageGroups)
-            {
-                if (ignoredPackages.Any(package.Name.StartsWith))
-                {
-                    continue;
-                }
-
-                var licenseValue = package.License ?? "";
-                var publishedDateValue = package.PublishedDate ?? "";
-                streamWriter.WriteLine($"{package.Name},{package.Version},\"{licenseValue}\",\"{publishedDateValue}\",\"{package.Url}\",\"{package.Projects}\"");
-            }
+            CsvReportGenerator.Generate(csvPath, packageGroups, ignoredPackages);
         }
 
         // Generate HTML file if requested
@@ -81,73 +60,7 @@ public class PackageScanner
                 ? "packages.html"
                 : Path.Combine(arguments.ReportDirectory, "packages.html");
 
-            // Ensure the directory exists for the file path
-            var htmlDirectory = Path.GetDirectoryName(htmlPath);
-            if (!string.IsNullOrEmpty(htmlDirectory))
-            {
-                Directory.CreateDirectory(htmlDirectory);
-            }
-
-            using var fileStream = File.Open(htmlPath, FileMode.Create);
-            using var streamWriter = new StreamWriter(fileStream);
-            streamWriter.WriteLine("<!DOCTYPE html>");
-            streamWriter.WriteLine("<html>");
-            streamWriter.WriteLine("<head>");
-            streamWriter.WriteLine("    <title>NuGet Packages Report</title>");
-            streamWriter.WriteLine("    <style>");
-            streamWriter.WriteLine("        body { font-family: Arial, sans-serif; margin: 20px; }");
-            streamWriter.WriteLine("        table { border-collapse: collapse; width: 100%; }");
-            streamWriter.WriteLine("        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }");
-            streamWriter.WriteLine("        th { background-color: #f2f2f2; font-weight: bold; }");
-            streamWriter.WriteLine("        tr:nth-child(even) { background-color: #f9f9f9; }");
-            streamWriter.WriteLine("        a { color: #0366d6; text-decoration: none; }");
-            streamWriter.WriteLine("        a:hover { text-decoration: underline; }");
-            streamWriter.WriteLine("        .package-name { font-weight: bold; }");
-            streamWriter.WriteLine("        .version { font-family: monospace; }");
-            streamWriter.WriteLine("        .version a { color: #0366d6; font-family: monospace; }");
-            streamWriter.WriteLine("        .license { font-size: 0.9em; }");
-            streamWriter.WriteLine("        .published-date { font-size: 0.9em; font-family: monospace; }");
-            streamWriter.WriteLine("        .projects { font-size: 0.9em; color: #666; }");
-            streamWriter.WriteLine("    </style>");
-            streamWriter.WriteLine("</head>");
-            streamWriter.WriteLine("<body>");
-            streamWriter.WriteLine("    <h1>NuGet Packages Report</h1>");
-            streamWriter.WriteLine("    <p>Generated on: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss zzz") + "</p>");
-            streamWriter.WriteLine("    <table>");
-            streamWriter.WriteLine("        <thead>");
-            streamWriter.WriteLine("            <tr>");
-            streamWriter.WriteLine("                <th>Name</th>");
-            streamWriter.WriteLine("                <th>Version</th>");
-            streamWriter.WriteLine("                <th>License</th>");
-            streamWriter.WriteLine("                <th>Published Date</th>");
-            streamWriter.WriteLine("                <th>Projects</th>");
-            streamWriter.WriteLine("            </tr>");
-            streamWriter.WriteLine("        </thead>");
-            streamWriter.WriteLine("        <tbody>");
-
-            foreach (var package in packageGroups)
-            {
-                if (ignoredPackages.Any(package.Name.StartsWith))
-                {
-                    continue;
-                }
-
-                var licenseHtml = FormatLicenseHtml(package.License);
-                var publishedDateHtml = System.Net.WebUtility.HtmlEncode(package.PublishedDate ?? "N/A");
-
-                streamWriter.WriteLine("            <tr>");
-                streamWriter.WriteLine($"                <td class=\"package-name\">{System.Net.WebUtility.HtmlEncode(package.Name)}</td>");
-                streamWriter.WriteLine($"                <td class=\"version\"><a href=\"{package.Url}\" target=\"_blank\">{System.Net.WebUtility.HtmlEncode(package.Version ?? "N/A")}</a></td>");
-                streamWriter.WriteLine($"                <td class=\"license\">{licenseHtml}</td>");
-                streamWriter.WriteLine($"                <td class=\"published-date\">{publishedDateHtml}</td>");
-                streamWriter.WriteLine($"                <td class=\"projects\">{System.Net.WebUtility.HtmlEncode(package.Projects)}</td>");
-                streamWriter.WriteLine("            </tr>");
-            }
-
-            streamWriter.WriteLine("        </tbody>");
-            streamWriter.WriteLine("    </table>");
-            streamWriter.WriteLine("</body>");
-            streamWriter.WriteLine("</html>");
+            HtmlReportGenerator.Generate(htmlPath, "NuGet Packages Report", packageGroups, ignoredPackages);
         }
 
         // Generate Markdown file if requested
@@ -157,73 +70,7 @@ public class PackageScanner
                 ? "packages.md"
                 : Path.Combine(arguments.ReportDirectory, "packages.md");
 
-            // Ensure the directory exists for the file path
-            var mdDirectory = Path.GetDirectoryName(mdPath);
-            if (!string.IsNullOrEmpty(mdDirectory))
-            {
-                Directory.CreateDirectory(mdDirectory);
-            }
-
-            using var fileStream = File.Open(mdPath, FileMode.Create);
-            using var streamWriter = new StreamWriter(fileStream);
-            streamWriter.WriteLine("# NuGet Packages Report");
-            streamWriter.WriteLine();
-            streamWriter.WriteLine($"Generated on: {DateTime.Now:yyyy-MM-dd HH:mm:ss zzz}");
-            streamWriter.WriteLine();
-            streamWriter.WriteLine("| Name | Version | License | Published Date | Projects |");
-            streamWriter.WriteLine("| ---- | ------- | ------- | -------------- | -------- |");
-
-            foreach (var package in packageGroups)
-            {
-                if (ignoredPackages.Any(package.Name.StartsWith))
-                {
-                    continue;
-                }
-
-                var licenseMd = FormatLicenseMarkdown(package.License);
-                var versionMd = $"[{EscapeMarkdown(package.Version ?? "N/A")}]({package.Url})";
-                var publishedDateMd = EscapeMarkdown(package.PublishedDate ?? "N/A");
-
-                streamWriter.WriteLine($"| {EscapeMarkdown(package.Name)} | {versionMd} | {licenseMd} | {publishedDateMd} | {EscapeMarkdown(package.Projects)} |");
-            }
-        }
-
-        //Console.ReadLine();
-
-        static string FormatLicenseMarkdown(string? license)
-        {
-            if (string.IsNullOrWhiteSpace(license))
-                return "N/A";
-
-            if (license.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-                license.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-            {
-                return $"[View License]({license})";
-            }
-
-            return EscapeMarkdown(license);
-        }
-
-        static string EscapeMarkdown(string? value)
-        {
-            if (string.IsNullOrEmpty(value))
-                return "";
-
-            return value.Replace("|", "\\|");
-        }
-
-        static string FormatLicenseHtml(string? license)
-        {
-            if (string.IsNullOrWhiteSpace(license))
-                return "N/A";
-
-            if (license.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-                license.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-            {
-                return $"<a href=\"{System.Net.WebUtility.HtmlEncode(license)}\" target=\"_blank\">View License</a>";
-            }
-
-            return System.Net.WebUtility.HtmlEncode(license);
+            MarkdownReportGenerator.Generate(mdPath, "NuGet Packages Report", packageGroups, ignoredPackages);
         }
 
         static List<(string Name, string Version, string Project)> ScanPackagesInPackagesConfigureFiles(string directory)
