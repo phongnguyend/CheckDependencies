@@ -30,7 +30,11 @@ public class PackageScanner
                     string.Join(", ", g.Select(x => x.Project)),
                     $"https://www.npmjs.com/package/{g.Key.Name}/v/{NpmPackgeResolver.FormatVersion(g.Key.Version)}",
                     info?.License,
-                    info?.PublishedDate);
+                    info?.PublishedDate,
+                    info?.LatestVersion,
+                    info?.LatestVersion != null ? $"https://www.npmjs.com/package/{g.Key.Name}/v/{info.LatestVersion}" : null,
+                    info?.LatestLicense,
+                    info?.LatestPublishedDate);
             })
             .OrderBy(x => x.Name)
             .ThenBy(x => x.Version).ToList();

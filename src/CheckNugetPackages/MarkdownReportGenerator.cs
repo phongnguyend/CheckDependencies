@@ -16,8 +16,8 @@ public static class MarkdownReportGenerator
         streamWriter.WriteLine();
         streamWriter.WriteLine($"Generated on: {DateTime.Now:yyyy-MM-dd HH:mm:ss zzz}");
         streamWriter.WriteLine();
-        streamWriter.WriteLine("| Name | Version | License | Published Date | Projects |");
-        streamWriter.WriteLine("| ---- | ------- | ------- | -------------- | -------- |");
+        streamWriter.WriteLine("| Name | Version | License | Published Date | Latest Version | Latest License | Latest Published Date | Projects |");
+        streamWriter.WriteLine("| ---- | ------- | ------- | -------------- | -------------- | -------------- | --------------------- | -------- |");
 
         foreach (var package in packages)
         {
@@ -29,8 +29,13 @@ public static class MarkdownReportGenerator
             var licenseMd = FormatLicenseMarkdown(package.License);
             var versionMd = $"[{EscapeMarkdown(package.Version ?? "N/A")}]({package.Url})";
             var publishedDateMd = EscapeMarkdown(package.PublishedDate ?? "N/A");
+            var latestVersionMd = package.LatestUrl != null
+                ? $"[{EscapeMarkdown(package.LatestVersion ?? "N/A")}]({package.LatestUrl})"
+                : EscapeMarkdown(package.LatestVersion ?? "N/A");
+            var latestLicenseMd = FormatLicenseMarkdown(package.LatestLicense);
+            var latestPublishedDateMd = EscapeMarkdown(package.LatestPublishedDate ?? "N/A");
 
-            streamWriter.WriteLine($"| {EscapeMarkdown(package.Name)} | {versionMd} | {licenseMd} | {publishedDateMd} | {EscapeMarkdown(package.Projects)} |");
+            streamWriter.WriteLine($"| {EscapeMarkdown(package.Name)} | {versionMd} | {licenseMd} | {publishedDateMd} | {latestVersionMd} | {latestLicenseMd} | {latestPublishedDateMd} | {EscapeMarkdown(package.Projects)} |");
         }
     }
 

@@ -1,11 +1,11 @@
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace CheckNpmPackages;
 
-public record PackageInfo(string? License, string? PublishedDate);
+public record PackageInfo(string? License, string? PublishedDate, string? LatestVersion, string? LatestLicense, string? LatestPublishedDate);
 
 public static class NpmPackgeResolver
 {
@@ -18,12 +18,8 @@ public static class NpmPackgeResolver
     };
 
     private const string RegistryBaseUrl = "https://registry.npmjs.org";
-    private const string CacheFileName = ".CheckNpmPackagesCache";
 
-    private static readonly JsonSerializerOptions CacheJsonOptions = new()
-    {
-        WriteIndented = true
-    };
+    private static readonly ConcurrentDictionary<string, Task<JsonElement?>> PackageDocCache = new(StringComparer.OrdinalIgnoreCase);
 
     public static async Task<Dictionary<(string Name, string Version), PackageInfo>> GetLicensesAsync(
         IEnumerable<(string Name, string Version)> packages)
@@ -31,139 +27,68 @@ public static class NpmPackgeResolver
         var distinct = packages.Distinct().ToList();
         var results = new Dictionary<(string Name, string Version), PackageInfo>();
 
-        // Load cache
-        var cache = LoadCache();
+        if (distinct.Count == 0)
+            return results;
 
-        // Determine which packages need fetching
-        var toFetch = new List<(string Name, string Version)>();
-        foreach (var package in distinct)
+        // Use SemaphoreSlim to limit concurrent requests
+        using var semaphore = new SemaphoreSlim(10);
+        var tasks = distinct.Select(async package =>
         {
-            var formattedVersion = FormatVersion(package.Version);
-            if (cache.TryGetValue(package.Name, out var versions) &&
-                versions.TryGetValue(formattedVersion, out var cachedInfo))
+            await semaphore.WaitAsync();
+            try
             {
-                results[package] = new PackageInfo(cachedInfo.License, cachedInfo.PublishedDate);
-            }
-            else
-            {
-                toFetch.Add(package);
-            }
-        }
-
-        if (toFetch.Count > 0)
-        {
-            // Use SemaphoreSlim to limit concurrent requests
-            using var semaphore = new SemaphoreSlim(10);
-            var tasks = toFetch.Select(async package =>
-            {
-                await semaphore.WaitAsync();
-                try
+                var info = await GetPackageInfoAsync(package.Name, package.Version);
+                lock (results)
                 {
-                    var info = await GetPackageInfoAsync(package.Name, package.Version);
-                    lock (results)
-                    {
-                        results[package] = info;
-                    }
+                    results[package] = info;
                 }
-                finally
-                {
-                    semaphore.Release();
-                }
-            });
-
-            await Task.WhenAll(tasks);
-
-            // Update cache with new results and save only if there were new fetches
-            foreach (var (key, info) in results)
-            {
-                var formattedVersion = FormatVersion(key.Version);
-                if (!cache.TryGetValue(key.Name, out var versions))
-                {
-                    versions = new Dictionary<string, CacheEntry>();
-                    cache[key.Name] = versions;
-                }
-
-                versions[formattedVersion] = new CacheEntry { License = info.License, PublishedDate = info.PublishedDate };
             }
+            finally
+            {
+                semaphore.Release();
+            }
+        });
 
-            SaveCache(cache);
-        }
+        await Task.WhenAll(tasks);
 
         return results;
-    }
-
-    private static Dictionary<string, Dictionary<string, CacheEntry>> LoadCache()
-    {
-        try
-        {
-            if (File.Exists(CacheFileName))
-            {
-                var json = File.ReadAllText(CacheFileName);
-                return JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, CacheEntry>>>(json) ?? [];
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Warning: Failed to load license cache: {ex.Message}");
-        }
-
-        return [];
-    }
-
-    private static void SaveCache(Dictionary<string, Dictionary<string, CacheEntry>> cache)
-    {
-        try
-        {
-            var ordered = cache
-                .OrderBy(p => p.Key)
-                .ToDictionary(
-                    p => p.Key,
-                    p => p.Value.OrderBy(v => v.Key).ToDictionary(v => v.Key, v => v.Value));
-
-            var json = JsonSerializer.Serialize(ordered, CacheJsonOptions);
-            File.WriteAllText(CacheFileName, json);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Warning: Failed to save license cache: {ex.Message}");
-        }
     }
 
     private static async Task<PackageInfo> GetPackageInfoAsync(string packageName, string? version)
     {
         if (string.IsNullOrWhiteSpace(packageName))
-            return new PackageInfo(null, null);
+            return new PackageInfo(null, null, null, null, null);
 
         try
         {
             var formattedVersion = FormatVersion(version);
 
-            // Fetch the full package document to get both version info and time metadata
-            var url = $"{RegistryBaseUrl}/{Uri.EscapeDataString(packageName)}";
-            var response = await HttpClient.GetAsync(url);
+            var doc = await GetPackageDocAsync(packageName);
+            if (doc == null)
+                return new PackageInfo(null, null, null, null, null);
 
-            if (!response.IsSuccessStatusCode)
-                return new PackageInfo(null, null);
+            var docValue = doc.Value;
 
-            var doc = await response.Content.ReadFromJsonAsync<JsonElement>();
+            // Determine the latest version from dist-tags
+            string? latestVersion = null;
+            if (docValue.TryGetProperty("dist-tags", out var distTags) &&
+                distTags.TryGetProperty("latest", out var latestProp) &&
+                latestProp.ValueKind == JsonValueKind.String)
+            {
+                latestVersion = latestProp.GetString();
+            }
 
-            // Determine the resolved version
+            // Determine the resolved version for the requested version
             var resolvedVersion = formattedVersion;
             if (string.IsNullOrWhiteSpace(resolvedVersion))
             {
-                // Fall back to dist-tags.latest
-                if (doc.TryGetProperty("dist-tags", out var distTags) &&
-                    distTags.TryGetProperty("latest", out var latestProp) &&
-                    latestProp.ValueKind == JsonValueKind.String)
-                {
-                    resolvedVersion = latestProp.GetString();
-                }
+                resolvedVersion = latestVersion;
             }
 
             // Extract license from the specific version
             string? license = null;
             if (!string.IsNullOrWhiteSpace(resolvedVersion) &&
-                doc.TryGetProperty("versions", out var versionsProp) &&
+                docValue.TryGetProperty("versions", out var versionsProp) &&
                 versionsProp.TryGetProperty(resolvedVersion, out var versionDoc))
             {
                 if (versionDoc.TryGetProperty("license", out var licenseProp) && licenseProp.ValueKind == JsonValueKind.String)
@@ -175,7 +100,7 @@ public static class NpmPackgeResolver
             // Extract published date from the "time" object
             string? publishedDate = null;
             if (!string.IsNullOrWhiteSpace(resolvedVersion) &&
-                doc.TryGetProperty("time", out var timeProp) &&
+                docValue.TryGetProperty("time", out var timeProp) &&
                 timeProp.TryGetProperty(resolvedVersion, out var versionTimeProp) &&
                 versionTimeProp.ValueKind == JsonValueKind.String)
             {
@@ -185,16 +110,59 @@ public static class NpmPackgeResolver
                 }
             }
 
+            // Extract latest version license and published date
+            string? latestLicense = null;
+            string? latestPublishedDate = null;
+            if (!string.IsNullOrWhiteSpace(latestVersion) &&
+                docValue.TryGetProperty("versions", out var versionsForLatest) &&
+                versionsForLatest.TryGetProperty(latestVersion, out var latestDoc))
+            {
+                if (latestDoc.TryGetProperty("license", out var latestLicenseProp) && latestLicenseProp.ValueKind == JsonValueKind.String)
+                {
+                    latestLicense = latestLicenseProp.GetString();
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(latestVersion) &&
+                docValue.TryGetProperty("time", out var timeForLatest) &&
+                timeForLatest.TryGetProperty(latestVersion, out var latestTimeProp) &&
+                latestTimeProp.ValueKind == JsonValueKind.String)
+            {
+                if (DateTimeOffset.TryParse(latestTimeProp.GetString(), out var dto))
+                {
+                    latestPublishedDate = dto.ToString("yyyy-MM-dd");
+                }
+            }
+
             return new PackageInfo(
                 !string.IsNullOrEmpty(license) ? license : null,
-                publishedDate);
+                publishedDate,
+                latestVersion,
+                !string.IsNullOrEmpty(latestLicense) ? latestLicense : null,
+                latestPublishedDate);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Warning: Failed to fetch license for {packageName} {version}: {ex.Message}");
         }
 
-        return new PackageInfo(null, null);
+        return new PackageInfo(null, null, null, null, null);
+    }
+
+    private static Task<JsonElement?> GetPackageDocAsync(string packageName)
+    {
+        return PackageDocCache.GetOrAdd(packageName, static (name, client) => FetchPackageDocAsync(name, client), HttpClient);
+    }
+
+    private static async Task<JsonElement?> FetchPackageDocAsync(string packageName, HttpClient httpClient)
+    {
+        var url = $"{RegistryBaseUrl}/{Uri.EscapeDataString(packageName)}";
+        var response = await httpClient.GetAsync(url);
+
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        return await response.Content.ReadFromJsonAsync<JsonElement>();
     }
 
     internal static string FormatVersion(string? version)
@@ -224,14 +192,5 @@ public static class NpmPackgeResolver
         trimmed = trimmed.TrimStart('>', '<', '=');
 
         return trimmed;
-    }
-
-    private class CacheEntry
-    {
-        [JsonPropertyName("license")]
-        public string? License { get; set; }
-
-        [JsonPropertyName("publishedDate")]
-        public string? PublishedDate { get; set; }
     }
 }

@@ -22,8 +22,8 @@ public class CsvReportGeneratorTests : IDisposable
         var filePath = Path.Combine(_tempDir, "packages.csv");
         var packages = new List<PackageEntry>
         {
-            new("lodash", "4.17.21", "my-app", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20"),
-            new("express", "4.18.2", "my-api", "https://www.npmjs.com/package/express/v/4.18.2", "MIT", "2023-10-11"),
+            new("lodash", "4.17.21", "my-app", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", "4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20"),
+            new("express", "4.18.2", "my-api", "https://www.npmjs.com/package/express/v/4.18.2", "MIT", "2023-10-11", "4.21.0", "https://www.npmjs.com/package/express/v/4.21.0", "MIT", "2024-09-11"),
         };
 
         CsvReportGenerator.Generate(filePath, packages, []);
@@ -43,8 +43,8 @@ public class CsvReportGeneratorTests : IDisposable
         var filePath = Path.Combine(_tempDir, "packages.csv");
         var packages = new List<PackageEntry>
         {
-            new("@types/node", "20.0.0", "my-app", "https://example.com", "MIT", "2024-01-01"),
-            new("lodash", "4.17.21", "my-app", "https://example.com", "MIT", "2021-02-20"),
+            new("@types/node", "20.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", "20.1.0", "https://example.com/latest", "MIT", "2024-02-01"),
+            new("lodash", "4.17.21", "my-app", "https://example.com", "MIT", "2021-02-20", "4.17.21", "https://example.com/latest", "MIT", "2021-02-20"),
         };
 
         CsvReportGenerator.Generate(filePath, packages, ["@types/"]);
@@ -60,7 +60,7 @@ public class CsvReportGeneratorTests : IDisposable
         var filePath = Path.Combine(_tempDir, "packages.csv");
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", "1.0.0", "my-app", "https://example.com", null, null),
+            new("some-pkg", "1.0.0", "my-app", "https://example.com", null, null, null, null, null, null),
         };
 
         CsvReportGenerator.Generate(filePath, packages, []);
@@ -97,12 +97,12 @@ public class CsvReportGeneratorTests : IDisposable
         var filePath = Path.Combine(_tempDir, "packages.csv");
         var packages = new List<PackageEntry>
         {
-            new("test-pkg", "2.0.0", "proj-x", "https://example.com", "Apache-2.0", "2024-01-15"),
+            new("test-pkg", "2.0.0", "proj-x", "https://example.com", "Apache-2.0", "2024-01-15", "3.0.0", "https://example.com/latest", "Apache-2.0", "2024-06-01"),
         };
 
         CsvReportGenerator.Generate(filePath, packages, []);
 
         var line = File.ReadAllLines(filePath)[0];
-        Assert.Equal("test-pkg,2.0.0,\"Apache-2.0\",\"2024-01-15\",\"https://example.com\",\"proj-x\"", line);
+        Assert.Equal("test-pkg,2.0.0,\"Apache-2.0\",\"2024-01-15\",\"3.0.0\",\"Apache-2.0\",\"2024-06-01\",\"https://example.com\",\"https://example.com/latest\",\"proj-x\"", line);
     }
 }

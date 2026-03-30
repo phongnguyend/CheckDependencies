@@ -42,6 +42,9 @@ public static class HtmlReportGenerator
         streamWriter.WriteLine("                <th>Version</th>");
         streamWriter.WriteLine("                <th>License</th>");
         streamWriter.WriteLine("                <th>Published Date</th>");
+        streamWriter.WriteLine("                <th>Latest Version</th>");
+        streamWriter.WriteLine("                <th>Latest License</th>");
+        streamWriter.WriteLine("                <th>Latest Published Date</th>");
         streamWriter.WriteLine("                <th>Projects</th>");
         streamWriter.WriteLine("            </tr>");
         streamWriter.WriteLine("        </thead>");
@@ -56,12 +59,20 @@ public static class HtmlReportGenerator
 
             var licenseHtml = FormatLicenseHtml(package.License);
             var publishedDateHtml = System.Net.WebUtility.HtmlEncode(package.PublishedDate ?? "N/A");
+            var latestVersionHtml = package.LatestUrl != null
+                ? $"<a href=\"{package.LatestUrl}\" target=\"_blank\">{System.Net.WebUtility.HtmlEncode(package.LatestVersion ?? "N/A")}</a>"
+                : System.Net.WebUtility.HtmlEncode(package.LatestVersion ?? "N/A");
+            var latestLicenseHtml = FormatLicenseHtml(package.LatestLicense);
+            var latestPublishedDateHtml = System.Net.WebUtility.HtmlEncode(package.LatestPublishedDate ?? "N/A");
 
             streamWriter.WriteLine("            <tr>");
             streamWriter.WriteLine($"                <td class=\"package-name\">{System.Net.WebUtility.HtmlEncode(package.Name)}</td>");
             streamWriter.WriteLine($"                <td class=\"version\"><a href=\"{package.Url}\" target=\"_blank\">{System.Net.WebUtility.HtmlEncode(package.Version ?? "N/A")}</a></td>");
             streamWriter.WriteLine($"                <td class=\"license\">{licenseHtml}</td>");
             streamWriter.WriteLine($"                <td class=\"published-date\">{publishedDateHtml}</td>");
+            streamWriter.WriteLine($"                <td class=\"version\">{latestVersionHtml}</td>");
+            streamWriter.WriteLine($"                <td class=\"license\">{latestLicenseHtml}</td>");
+            streamWriter.WriteLine($"                <td class=\"published-date\">{latestPublishedDateHtml}</td>");
             streamWriter.WriteLine($"                <td class=\"projects\">{System.Net.WebUtility.HtmlEncode(package.Projects)}</td>");
             streamWriter.WriteLine("            </tr>");
         }

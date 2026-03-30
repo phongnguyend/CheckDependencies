@@ -19,6 +19,23 @@ public class NpmPackageResolverTests
     }
 
     [Fact]
+    public async Task GetLicensesAsync_KnownPackage_ReturnsLatestVersionInfo()
+    {
+        var packages = new List<(string Name, string Version)>
+        {
+            ("lodash", "4.17.21"),
+        };
+
+        var results = await NpmPackgeResolver.GetLicensesAsync(packages);
+
+        Assert.Single(results);
+        var info = results[("lodash", "4.17.21")];
+        Assert.NotNull(info.LatestVersion);
+        Assert.NotNull(info.LatestLicense);
+        Assert.NotNull(info.LatestPublishedDate);
+    }
+
+    [Fact]
     public async Task GetLicensesAsync_NonExistentPackage_ReturnsNullInfo()
     {
         var packages = new List<(string Name, string Version)>
@@ -32,6 +49,9 @@ public class NpmPackageResolverTests
         var info = results[("nonexistent-pkg-xyz-99999", "0.0.1")];
         Assert.Null(info.License);
         Assert.Null(info.PublishedDate);
+        Assert.Null(info.LatestVersion);
+        Assert.Null(info.LatestLicense);
+        Assert.Null(info.LatestPublishedDate);
     }
 
     [Fact]
@@ -77,6 +97,21 @@ public class NpmPackageResolverTests
         var info = results[("lodash", "4.17.21")];
         Assert.NotNull(info.PublishedDate);
         Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", info.PublishedDate);
+    }
+
+    [Fact]
+    public async Task GetLicensesAsync_LatestPublishedDate_IsFormattedCorrectly()
+    {
+        var packages = new List<(string Name, string Version)>
+        {
+            ("lodash", "4.17.21"),
+        };
+
+        var results = await NpmPackgeResolver.GetLicensesAsync(packages);
+
+        var info = results[("lodash", "4.17.21")];
+        Assert.NotNull(info.LatestPublishedDate);
+        Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", info.LatestPublishedDate);
     }
 
     [Fact]

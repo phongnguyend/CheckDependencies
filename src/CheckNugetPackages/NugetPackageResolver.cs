@@ -1,11 +1,11 @@
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http.Json;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace CheckNugetPackages;
 
-public record PackageInfo(string? License, string? PublishedDate);
+public record PackageInfo(string? License, string? PublishedDate, string? LatestVersion, string? LatestLicense, string? LatestPublishedDate);
 
 public static class NugetPackageResolver
 {
@@ -18,12 +18,8 @@ public static class NugetPackageResolver
     };
 
     private const string RegistrationBaseUrl = "https://api.nuget.org/v3/registration5-gz-semver2";
-    private const string CacheFileName = ".CheckNugetPackagesCache";
 
-    private static readonly JsonSerializerOptions CacheJsonOptions = new()
-    {
-        WriteIndented = true
-    };
+    private static readonly ConcurrentDictionary<string, Task<RegistrationIndex?>> RegistrationCache = new(StringComparer.OrdinalIgnoreCase);
 
     public static async Task<Dictionary<(string Name, string Version), PackageInfo>> GetLicensesAsync(
         IEnumerable<(string Name, string Version)> packages)
@@ -31,171 +27,164 @@ public static class NugetPackageResolver
         var distinct = packages.Distinct().ToList();
         var results = new Dictionary<(string Name, string Version), PackageInfo>();
 
-        // Load cache
-        var cache = LoadCache();
+        if (distinct.Count == 0)
+            return results;
 
-        // Determine which packages need fetching
-        var toFetch = new List<(string Name, string Version)>();
-        foreach (var package in distinct)
+        // Use SemaphoreSlim to limit concurrent requests
+        using var semaphore = new SemaphoreSlim(10);
+        var tasks = distinct.Select(async package =>
         {
-            if (cache.TryGetValue(package.Name, out var versions) &&
-                versions.TryGetValue(package.Version, out var cachedInfo))
+            await semaphore.WaitAsync();
+            try
             {
-                results[package] = new PackageInfo(cachedInfo.License, cachedInfo.PublishedDate);
-            }
-            else
-            {
-                toFetch.Add(package);
-            }
-        }
-
-        if (toFetch.Count > 0)
-        {
-            // Use SemaphoreSlim to limit concurrent requests
-            using var semaphore = new SemaphoreSlim(10);
-            var tasks = toFetch.Select(async package =>
-            {
-                await semaphore.WaitAsync();
-                try
+                var info = await GetPackageInfoAsync(package.Name, package.Version);
+                lock (results)
                 {
-                    var info = await GetPackageInfoAsync(package.Name, package.Version);
-                    lock (results)
-                    {
-                        results[package] = info;
-                    }
+                    results[package] = info;
                 }
-                finally
-                {
-                    semaphore.Release();
-                }
-            });
-
-            await Task.WhenAll(tasks);
-        }
-
-        // Update cache with new results and save only if there were new fetches
-        if (toFetch.Count > 0)
-        {
-            foreach (var (key, info) in results)
-            {
-                if (!cache.TryGetValue(key.Name, out var versions))
-                {
-                    versions = new Dictionary<string, CacheEntry>();
-                    cache[key.Name] = versions;
-                }
-
-                versions[key.Version] = new CacheEntry { License = info.License, PublishedDate = info.PublishedDate };
             }
+            finally
+            {
+                semaphore.Release();
+            }
+        });
 
-            SaveCache(cache);
-        }
+        await Task.WhenAll(tasks);
 
         return results;
-    }
-
-    private static Dictionary<string, Dictionary<string, CacheEntry>> LoadCache()
-    {
-        try
-        {
-            if (File.Exists(CacheFileName))
-            {
-                var json = File.ReadAllText(CacheFileName);
-                return JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, CacheEntry>>>(json) ?? [];
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Warning: Failed to load license cache: {ex.Message}");
-        }
-
-        return [];
-    }
-
-    private static void SaveCache(Dictionary<string, Dictionary<string, CacheEntry>> cache)
-    {
-        try
-        {
-            var ordered = cache
-                .OrderBy(p => p.Key)
-                .ToDictionary(
-                    p => p.Key,
-                    p => p.Value.OrderBy(v => v.Key).ToDictionary(v => v.Key, v => v.Value));
-
-            var json = JsonSerializer.Serialize(ordered, CacheJsonOptions);
-            File.WriteAllText(CacheFileName, json);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Warning: Failed to save license cache: {ex.Message}");
-        }
     }
 
     private static async Task<PackageInfo> GetPackageInfoAsync(string packageName, string? version)
     {
         if (string.IsNullOrWhiteSpace(packageName))
-            return new PackageInfo(null, null);
+            return new PackageInfo(null, null, null, null, null);
 
         try
         {
-            var url = $"{RegistrationBaseUrl}/{packageName.ToLowerInvariant()}/index.json";
-            var response = await HttpClient.GetAsync(url);
-
-            if (!response.IsSuccessStatusCode)
-                return new PackageInfo(null, null);
-
-            var registration = await response.Content.ReadFromJsonAsync<RegistrationIndex>();
+            var registration = await GetRegistrationAsync(packageName);
             if (registration?.Items == null)
-                return new PackageInfo(null, null);
+                return new PackageInfo(null, null, null, null, null);
 
-            // Search through pages for the matching version
+            string? license = null;
+            string? publishedDate = null;
+            CatalogEntry? latestEntry = null;
+
+            // Search through pages for the matching version and track the latest version
             foreach (var page in registration.Items)
             {
-                var items = page.Items;
-
-                // If items are not inlined, fetch the page
-                if (items == null && page.Id != null)
-                {
-                    var pageResponse = await HttpClient.GetAsync(page.Id);
-                    if (!pageResponse.IsSuccessStatusCode)
-                        continue;
-
-                    var pageData = await pageResponse.Content.ReadFromJsonAsync<RegistrationPage>();
-                    items = pageData?.Items;
-                }
-
-                if (items == null)
+                if (page.Items == null)
                     continue;
 
-                foreach (var item in items)
+                foreach (var item in page.Items)
                 {
                     var catalogEntry = item.CatalogEntry;
                     if (catalogEntry == null)
                         continue;
 
+                    // Check for the requested version
                     if (string.Equals(catalogEntry.Version, version, StringComparison.OrdinalIgnoreCase))
                     {
-                        var license = !string.IsNullOrEmpty(catalogEntry.LicenseExpression) ? catalogEntry.LicenseExpression : catalogEntry.LicenseUrl;
-                        var publishedDate = catalogEntry.Published?.ToString("yyyy-MM-dd");
-                        return new PackageInfo(license, publishedDate);
+                        license = !string.IsNullOrEmpty(catalogEntry.LicenseExpression) ? catalogEntry.LicenseExpression : catalogEntry.LicenseUrl;
+                        publishedDate = catalogEntry.Published?.ToString("yyyy-MM-dd");
+                    }
+
+                    // Track the latest (non-prerelease) version
+                    if (catalogEntry.Listed != false && !IsPrerelease(catalogEntry.Version))
+                    {
+                        if (latestEntry == null || CompareVersions(catalogEntry.Version, latestEntry.Version) > 0)
+                        {
+                            latestEntry = catalogEntry;
+                        }
                     }
                 }
             }
+
+            string? latestVersion = latestEntry?.Version;
+            string? latestLicense = null;
+            string? latestPublishedDate = null;
+
+            if (latestEntry != null)
+            {
+                latestLicense = !string.IsNullOrEmpty(latestEntry.LicenseExpression) ? latestEntry.LicenseExpression : latestEntry.LicenseUrl;
+                latestPublishedDate = latestEntry.Published?.ToString("yyyy-MM-dd");
+            }
+
+            return new PackageInfo(license, publishedDate, latestVersion, latestLicense, latestPublishedDate);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Warning: Failed to fetch license for {packageName} {version}: {ex.Message}");
         }
 
-        return new PackageInfo(null, null);
+        return new PackageInfo(null, null, null, null, null);
     }
 
-    private class CacheEntry
+    private static Task<RegistrationIndex?> GetRegistrationAsync(string packageName)
     {
-        [JsonPropertyName("license")]
-        public string? License { get; set; }
+        return RegistrationCache.GetOrAdd(packageName, static (name, client) => FetchRegistrationAsync(name, client), HttpClient);
+    }
 
-        [JsonPropertyName("publishedDate")]
-        public string? PublishedDate { get; set; }
+    private static async Task<RegistrationIndex?> FetchRegistrationAsync(string packageName, HttpClient httpClient)
+    {
+        var url = $"{RegistrationBaseUrl}/{packageName.ToLowerInvariant()}/index.json";
+        var response = await httpClient.GetAsync(url);
+
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        var registration = await response.Content.ReadFromJsonAsync<RegistrationIndex>();
+        if (registration?.Items == null)
+            return registration;
+
+        // Pre-fetch any pages that don't have inlined items so the data is fully resolved in the cache
+        for (var i = 0; i < registration.Items.Count; i++)
+        {
+            var page = registration.Items[i];
+            if (page.Items == null && page.Id != null)
+            {
+                var pageResponse = await httpClient.GetAsync(page.Id);
+                if (pageResponse.IsSuccessStatusCode)
+                {
+                    var pageData = await pageResponse.Content.ReadFromJsonAsync<RegistrationPage>();
+                    if (pageData != null)
+                    {
+                        registration.Items[i] = pageData;
+                    }
+                }
+            }
+        }
+
+        return registration;
+    }
+
+    private static bool IsPrerelease(string? version)
+    {
+        if (string.IsNullOrWhiteSpace(version))
+            return false;
+
+        return version.Contains('-');
+    }
+
+    private static int CompareVersions(string? a, string? b)
+    {
+        if (a == null && b == null) return 0;
+        if (a == null) return -1;
+        if (b == null) return 1;
+
+        // Strip prerelease suffix for comparison
+        var aParts = a.Split('-')[0].Split('.');
+        var bParts = b.Split('-')[0].Split('.');
+
+        var maxLen = Math.Max(aParts.Length, bParts.Length);
+        for (var i = 0; i < maxLen; i++)
+        {
+            var aNum = i < aParts.Length && int.TryParse(aParts[i], out var av) ? av : 0;
+            var bNum = i < bParts.Length && int.TryParse(bParts[i], out var bv) ? bv : 0;
+            if (aNum != bNum)
+                return aNum.CompareTo(bNum);
+        }
+
+        return 0;
     }
 
     private class RegistrationIndex
@@ -232,5 +221,8 @@ public static class NugetPackageResolver
 
         [JsonPropertyName("published")]
         public DateTimeOffset? Published { get; set; }
+
+        [JsonPropertyName("listed")]
+        public bool? Listed { get; set; }
     }
 }

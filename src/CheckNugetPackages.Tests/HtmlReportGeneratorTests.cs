@@ -53,6 +53,9 @@ public class HtmlReportGeneratorTests : IDisposable
         Assert.Contains("<th>Version</th>", html);
         Assert.Contains("<th>License</th>", html);
         Assert.Contains("<th>Published Date</th>", html);
+        Assert.Contains("<th>Latest Version</th>", html);
+        Assert.Contains("<th>Latest License</th>", html);
+        Assert.Contains("<th>Latest Published Date</th>", html);
         Assert.Contains("<th>Projects</th>", html);
     }
 
@@ -61,7 +64,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("Newtonsoft.Json", "13.0.3", "ProjectA", "https://www.nuget.org/packages/Newtonsoft.Json/13.0.3", "MIT", "2023-03-08"),
+            new("Newtonsoft.Json", "13.0.3", "ProjectA", "https://www.nuget.org/packages/Newtonsoft.Json/13.0.3", "MIT", "2023-03-08", "13.0.3", "https://www.nuget.org/packages/Newtonsoft.Json/13.0.3", "MIT", "2023-03-08"),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -79,8 +82,8 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("System.Text.Json", "8.0.0", "ProjectA", "https://example.com", "MIT", "2023-11-14"),
-            new("Newtonsoft.Json", "13.0.3", "ProjectA", "https://example.com", "MIT", "2023-03-08"),
+            new("System.Text.Json", "8.0.0", "ProjectA", "https://example.com", "MIT", "2023-11-14", "8.0.0", "https://example.com/latest", "MIT", "2023-11-14"),
+            new("Newtonsoft.Json", "13.0.3", "ProjectA", "https://example.com", "MIT", "2023-03-08", "13.0.3", "https://example.com/latest", "MIT", "2023-03-08"),
         };
 
         var html = GenerateAndRead("Test Report", packages, ["System."]);
@@ -94,7 +97,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("SomePackage", "1.0.0", "ProjectA", "https://example.com", null, "2024-01-01"),
+            new("SomePackage", "1.0.0", "ProjectA", "https://example.com", null, "2024-01-01", "1.0.0", null, null, null),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -107,7 +110,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("SomePackage", "1.0.0", "ProjectA", "https://example.com", "MIT", null),
+            new("SomePackage", "1.0.0", "ProjectA", "https://example.com", "MIT", null, "1.0.0", null, "MIT", null),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -120,7 +123,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("SomePackage", null, "ProjectA", "https://example.com", "MIT", "2024-01-01"),
+            new("SomePackage", null, "ProjectA", "https://example.com", "MIT", "2024-01-01", "1.0.0", null, "MIT", "2024-01-01"),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -133,7 +136,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("SomePackage", "1.0.0", "ProjectA", "https://example.com", "https://licenses.nuget.org/MIT", "2024-01-01"),
+            new("SomePackage", "1.0.0", "ProjectA", "https://example.com", "https://licenses.nuget.org/MIT", "2024-01-01", "1.0.0", null, "MIT", "2024-01-01"),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -146,7 +149,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("Pkg<Name>", "1.0.0", "Project&A", "https://example.com", "License&Co", "2024-01-01"),
+            new("Pkg<Name>", "1.0.0", "Project&A", "https://example.com", "License&Co", "2024-01-01", "1.0.0", null, "License&Co", "2024-01-01"),
         };
 
         var html = GenerateAndRead("Title<>&", packages, []);
@@ -172,5 +175,44 @@ public class HtmlReportGeneratorTests : IDisposable
         var filePath = Path.Combine(_tempDir, "subdir", "report.html");
         HtmlReportGenerator.Generate(filePath, "Test", [], []);
         Assert.True(File.Exists(filePath));
+    }
+
+    [Fact]
+    public void Generate_RendersLatestVersionAsLink()
+    {
+        var packages = new List<PackageEntry>
+        {
+            new("Newtonsoft.Json", "12.0.3", "ProjectA", "https://www.nuget.org/packages/Newtonsoft.Json/12.0.3", "MIT", "2019-11-09", "13.0.3", "https://www.nuget.org/packages/Newtonsoft.Json/13.0.3", "MIT", "2023-03-08"),
+        };
+
+        var html = GenerateAndRead("Test Report", packages, []);
+
+        Assert.Contains("<a href=\"https://www.nuget.org/packages/Newtonsoft.Json/13.0.3\" target=\"_blank\">13.0.3</a>", html);
+        Assert.Contains("2023-03-08", html);
+    }
+
+    [Fact]
+    public void Generate_NullLatestVersion_RendersNA()
+    {
+        var packages = new List<PackageEntry>
+        {
+            new("SomePackage", "1.0.0", "ProjectA", "https://example.com", "MIT", "2024-01-01", null, null, null, null),
+        };
+
+        var html = GenerateAndRead("Test Report", packages, []);
+
+        var latestVersionCount = CountOccurrences(html, "N/A");
+        Assert.True(latestVersionCount >= 3);
+    }
+
+    private static int CountOccurrences(string text, string pattern)
+    {
+        int count = 0, index = 0;
+        while ((index = text.IndexOf(pattern, index, StringComparison.Ordinal)) != -1)
+        {
+            count++;
+            index += pattern.Length;
+        }
+        return count;
     }
 }

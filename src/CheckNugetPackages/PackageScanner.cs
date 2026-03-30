@@ -32,7 +32,11 @@ public class PackageScanner
                     string.Join(", ", g.Select(x => x.Project)),
                     $"https://www.nuget.org/packages/{g.Key.Name}/{g.Key.Version}",
                     info?.License,
-                    info?.PublishedDate);
+                    info?.PublishedDate,
+                    info?.LatestVersion,
+                    info?.LatestVersion != null ? $"https://www.nuget.org/packages/{g.Key.Name}/{info.LatestVersion}" : null,
+                    info?.LatestLicense,
+                    info?.LatestPublishedDate);
             })
             .OrderBy(x => x.Name)
             .ThenBy(x => x.Version).ToList();
