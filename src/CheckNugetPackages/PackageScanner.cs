@@ -18,18 +18,23 @@ public class PackageScanner
 
         // Fetch license information from NuGet API
         Console.WriteLine("Fetching license information from NuGet API...");
-        var licenseMap = await NugetLicenseResolver.GetLicensesAsync(
+        var packageInfoMap = await NugetLicenseResolver.GetLicensesAsync(
             packages.Select(p => (p.Name, p.Version)).Distinct());
         Console.WriteLine("License information fetched.");
 
         var packageGroups = packages.GroupBy(x => new { x.Name, x.Version })
-            .Select(g => new
+            .Select(g =>
             {
-                g.Key.Name,
-                g.Key.Version,
-                Projects = string.Join(", ", g.Select(x => x.Project)),
-                Url = $"https://www.nuget.org/packages/{g.Key.Name}/{g.Key.Version}",
-                License = licenseMap.TryGetValue((g.Key.Name, g.Key.Version), out var license) ? license : null
+                var info = packageInfoMap.TryGetValue((g.Key.Name, g.Key.Version), out var pi) ? pi : null;
+                return new
+                {
+                    g.Key.Name,
+                    g.Key.Version,
+                    Projects = string.Join(", ", g.Select(x => x.Project)),
+                    Url = $"https://www.nuget.org/packages/{g.Key.Name}/{g.Key.Version}",
+                    License = info?.License,
+                    PublishedDate = info?.PublishedDate
+                };
             })
             .OrderBy(x => x.Name)
             .ThenBy(x => x.Version).ToList();
@@ -64,7 +69,8 @@ public class PackageScanner
                 }
 
                 var licenseValue = package.License ?? "";
-                streamWriter.WriteLine($"{package.Name},{package.Version},\"{licenseValue}\",\"{package.Url}\",\"{package.Projects}\"");
+                var publishedDateValue = package.PublishedDate ?? "";
+                streamWriter.WriteLine($"{package.Name},{package.Version},\"{licenseValue}\",\"{publishedDateValue}\",\"{package.Url}\",\"{package.Projects}\"");
             }
         }
 
@@ -100,6 +106,7 @@ public class PackageScanner
             streamWriter.WriteLine("        .version { font-family: monospace; }");
             streamWriter.WriteLine("        .version a { color: #0366d6; font-family: monospace; }");
             streamWriter.WriteLine("        .license { font-size: 0.9em; }");
+            streamWriter.WriteLine("        .published-date { font-size: 0.9em; font-family: monospace; }");
             streamWriter.WriteLine("        .projects { font-size: 0.9em; color: #666; }");
             streamWriter.WriteLine("    </style>");
             streamWriter.WriteLine("</head>");
@@ -112,6 +119,7 @@ public class PackageScanner
             streamWriter.WriteLine("                <th>Name</th>");
             streamWriter.WriteLine("                <th>Version</th>");
             streamWriter.WriteLine("                <th>License</th>");
+            streamWriter.WriteLine("                <th>Published Date</th>");
             streamWriter.WriteLine("                <th>Projects</th>");
             streamWriter.WriteLine("            </tr>");
             streamWriter.WriteLine("        </thead>");
@@ -125,11 +133,13 @@ public class PackageScanner
                 }
 
                 var licenseHtml = FormatLicenseHtml(package.License);
+                var publishedDateHtml = System.Net.WebUtility.HtmlEncode(package.PublishedDate ?? "N/A");
 
                 streamWriter.WriteLine("            <tr>");
                 streamWriter.WriteLine($"                <td class=\"package-name\">{System.Net.WebUtility.HtmlEncode(package.Name)}</td>");
                 streamWriter.WriteLine($"                <td class=\"version\"><a href=\"{package.Url}\" target=\"_blank\">{System.Net.WebUtility.HtmlEncode(package.Version ?? "N/A")}</a></td>");
                 streamWriter.WriteLine($"                <td class=\"license\">{licenseHtml}</td>");
+                streamWriter.WriteLine($"                <td class=\"published-date\">{publishedDateHtml}</td>");
                 streamWriter.WriteLine($"                <td class=\"projects\">{System.Net.WebUtility.HtmlEncode(package.Projects)}</td>");
                 streamWriter.WriteLine("            </tr>");
             }
@@ -160,8 +170,8 @@ public class PackageScanner
             streamWriter.WriteLine();
             streamWriter.WriteLine($"Generated on: {DateTime.Now:yyyy-MM-dd HH:mm:ss zzz}");
             streamWriter.WriteLine();
-            streamWriter.WriteLine("| Name | Version | License | Projects |");
-            streamWriter.WriteLine("| ---- | ------- | ------- | -------- |");
+            streamWriter.WriteLine("| Name | Version | License | Published Date | Projects |");
+            streamWriter.WriteLine("| ---- | ------- | ------- | -------------- | -------- |");
 
             foreach (var package in packageGroups)
             {
@@ -172,8 +182,9 @@ public class PackageScanner
 
                 var licenseMd = FormatLicenseMarkdown(package.License);
                 var versionMd = $"[{EscapeMarkdown(package.Version ?? "N/A")}]({package.Url})";
+                var publishedDateMd = EscapeMarkdown(package.PublishedDate ?? "N/A");
 
-                streamWriter.WriteLine($"| {EscapeMarkdown(package.Name)} | {versionMd} | {licenseMd} | {EscapeMarkdown(package.Projects)} |");
+                streamWriter.WriteLine($"| {EscapeMarkdown(package.Name)} | {versionMd} | {licenseMd} | {publishedDateMd} | {EscapeMarkdown(package.Projects)} |");
             }
         }
 

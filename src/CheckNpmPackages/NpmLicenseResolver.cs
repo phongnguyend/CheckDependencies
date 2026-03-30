@@ -5,6 +5,8 @@ using System.Text.Json.Serialization;
 
 namespace CheckNpmPackages;
 
+public record PackageInfo(string? License, string? PublishedDate);
+
 public static class NpmLicenseResolver
 {
     private static readonly HttpClient HttpClient = new(new HttpClientHandler
@@ -23,11 +25,11 @@ public static class NpmLicenseResolver
         WriteIndented = true
     };
 
-    public static async Task<Dictionary<(string Name, string Version), string?>> GetLicensesAsync(
+    public static async Task<Dictionary<(string Name, string Version), PackageInfo>> GetLicensesAsync(
         IEnumerable<(string Name, string Version)> packages)
     {
         var distinct = packages.Distinct().ToList();
-        var results = new Dictionary<(string Name, string Version), string?>();
+        var results = new Dictionary<(string Name, string Version), PackageInfo>();
 
         // Load cache
         var cache = LoadCache();
@@ -38,9 +40,9 @@ public static class NpmLicenseResolver
         {
             var formattedVersion = FormatVersion(package.Version);
             if (cache.TryGetValue(package.Name, out var versions) &&
-                versions.TryGetValue(formattedVersion, out var cachedLicense))
+                versions.TryGetValue(formattedVersion, out var cachedInfo))
             {
-                results[package] = cachedLicense;
+                results[package] = new PackageInfo(cachedInfo.License, cachedInfo.PublishedDate);
             }
             else
             {
@@ -57,10 +59,10 @@ public static class NpmLicenseResolver
                 await semaphore.WaitAsync();
                 try
                 {
-                    var license = await GetLicenseAsync(package.Name, package.Version);
+                    var info = await GetPackageInfoAsync(package.Name, package.Version);
                     lock (results)
                     {
-                        results[package] = license;
+                        results[package] = info;
                     }
                 }
                 finally
@@ -72,16 +74,16 @@ public static class NpmLicenseResolver
             await Task.WhenAll(tasks);
 
             // Update cache with new results and save only if there were new fetches
-            foreach (var (key, license) in results)
+            foreach (var (key, info) in results)
             {
                 var formattedVersion = FormatVersion(key.Version);
                 if (!cache.TryGetValue(key.Name, out var versions))
                 {
-                    versions = new Dictionary<string, string?>();
+                    versions = new Dictionary<string, CacheEntry>();
                     cache[key.Name] = versions;
                 }
 
-                versions[formattedVersion] = license;
+                versions[formattedVersion] = new CacheEntry { License = info.License, PublishedDate = info.PublishedDate };
             }
 
             SaveCache(cache);
@@ -90,14 +92,14 @@ public static class NpmLicenseResolver
         return results;
     }
 
-    private static Dictionary<string, Dictionary<string, string?>> LoadCache()
+    private static Dictionary<string, Dictionary<string, CacheEntry>> LoadCache()
     {
         try
         {
             if (File.Exists(CacheFileName))
             {
                 var json = File.ReadAllText(CacheFileName);
-                return JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string?>>>(json) ?? [];
+                return JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, CacheEntry>>>(json) ?? [];
             }
         }
         catch (Exception ex)
@@ -108,7 +110,7 @@ public static class NpmLicenseResolver
         return [];
     }
 
-    private static void SaveCache(Dictionary<string, Dictionary<string, string?>> cache)
+    private static void SaveCache(Dictionary<string, Dictionary<string, CacheEntry>> cache)
     {
         try
         {
@@ -127,40 +129,72 @@ public static class NpmLicenseResolver
         }
     }
 
-    private static async Task<string?> GetLicenseAsync(string packageName, string? version)
+    private static async Task<PackageInfo> GetPackageInfoAsync(string packageName, string? version)
     {
         if (string.IsNullOrWhiteSpace(packageName))
-            return null;
+            return new PackageInfo(null, null);
 
         try
         {
-            // npm registry API: GET /{package}/{version}
             var formattedVersion = FormatVersion(version);
-            var url = string.IsNullOrWhiteSpace(formattedVersion)
-                ? $"{RegistryBaseUrl}/{Uri.EscapeDataString(packageName)}/latest"
-                : $"{RegistryBaseUrl}/{Uri.EscapeDataString(packageName)}/{Uri.EscapeDataString(formattedVersion)}";
 
+            // Fetch the full package document to get both version info and time metadata
+            var url = $"{RegistryBaseUrl}/{Uri.EscapeDataString(packageName)}";
             var response = await HttpClient.GetAsync(url);
 
             if (!response.IsSuccessStatusCode)
-                return null;
+                return new PackageInfo(null, null);
 
-            var packageInfo = await response.Content.ReadFromJsonAsync<NpmPackageVersion>();
-            if (packageInfo == null)
-                return null;
+            var doc = await response.Content.ReadFromJsonAsync<JsonElement>();
 
-            // Try license field first (string)
-            if (!string.IsNullOrEmpty(packageInfo.License))
-                return packageInfo.License;
+            // Determine the resolved version
+            var resolvedVersion = formattedVersion;
+            if (string.IsNullOrWhiteSpace(resolvedVersion))
+            {
+                // Fall back to dist-tags.latest
+                if (doc.TryGetProperty("dist-tags", out var distTags) &&
+                    distTags.TryGetProperty("latest", out var latestProp) &&
+                    latestProp.ValueKind == JsonValueKind.String)
+                {
+                    resolvedVersion = latestProp.GetString();
+                }
+            }
 
-            return null;
+            // Extract license from the specific version
+            string? license = null;
+            if (!string.IsNullOrWhiteSpace(resolvedVersion) &&
+                doc.TryGetProperty("versions", out var versionsProp) &&
+                versionsProp.TryGetProperty(resolvedVersion, out var versionDoc))
+            {
+                if (versionDoc.TryGetProperty("license", out var licenseProp) && licenseProp.ValueKind == JsonValueKind.String)
+                {
+                    license = licenseProp.GetString();
+                }
+            }
+
+            // Extract published date from the "time" object
+            string? publishedDate = null;
+            if (!string.IsNullOrWhiteSpace(resolvedVersion) &&
+                doc.TryGetProperty("time", out var timeProp) &&
+                timeProp.TryGetProperty(resolvedVersion, out var versionTimeProp) &&
+                versionTimeProp.ValueKind == JsonValueKind.String)
+            {
+                if (DateTimeOffset.TryParse(versionTimeProp.GetString(), out var dto))
+                {
+                    publishedDate = dto.ToString("yyyy-MM-dd");
+                }
+            }
+
+            return new PackageInfo(
+                !string.IsNullOrEmpty(license) ? license : null,
+                publishedDate);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Warning: Failed to fetch license for {packageName} {version}: {ex.Message}");
         }
 
-        return null;
+        return new PackageInfo(null, null);
     }
 
     internal static string FormatVersion(string? version)
@@ -192,9 +226,12 @@ public static class NpmLicenseResolver
         return trimmed;
     }
 
-    private class NpmPackageVersion
+    private class CacheEntry
     {
         [JsonPropertyName("license")]
         public string? License { get; set; }
+
+        [JsonPropertyName("publishedDate")]
+        public string? PublishedDate { get; set; }
     }
 }

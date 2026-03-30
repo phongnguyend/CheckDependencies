@@ -5,6 +5,8 @@ using System.Text.Json.Serialization;
 
 namespace CheckNugetPackages;
 
+public record PackageInfo(string? License, string? PublishedDate);
+
 public static class NugetLicenseResolver
 {
     private static readonly HttpClient HttpClient = new(new HttpClientHandler
@@ -23,11 +25,11 @@ public static class NugetLicenseResolver
         WriteIndented = true
     };
 
-    public static async Task<Dictionary<(string Name, string Version), string?>> GetLicensesAsync(
+    public static async Task<Dictionary<(string Name, string Version), PackageInfo>> GetLicensesAsync(
         IEnumerable<(string Name, string Version)> packages)
     {
         var distinct = packages.Distinct().ToList();
-        var results = new Dictionary<(string Name, string Version), string?>();
+        var results = new Dictionary<(string Name, string Version), PackageInfo>();
 
         // Load cache
         var cache = LoadCache();
@@ -37,9 +39,9 @@ public static class NugetLicenseResolver
         foreach (var package in distinct)
         {
             if (cache.TryGetValue(package.Name, out var versions) &&
-                versions.TryGetValue(package.Version, out var cachedLicense))
+                versions.TryGetValue(package.Version, out var cachedInfo))
             {
-                results[package] = cachedLicense;
+                results[package] = new PackageInfo(cachedInfo.License, cachedInfo.PublishedDate);
             }
             else
             {
@@ -56,10 +58,10 @@ public static class NugetLicenseResolver
                 await semaphore.WaitAsync();
                 try
                 {
-                    var license = await GetLicenseAsync(package.Name, package.Version);
+                    var info = await GetPackageInfoAsync(package.Name, package.Version);
                     lock (results)
                     {
-                        results[package] = license;
+                        results[package] = info;
                     }
                 }
                 finally
@@ -74,15 +76,15 @@ public static class NugetLicenseResolver
         // Update cache with new results and save only if there were new fetches
         if (toFetch.Count > 0)
         {
-            foreach (var (key, license) in results)
+            foreach (var (key, info) in results)
             {
                 if (!cache.TryGetValue(key.Name, out var versions))
                 {
-                    versions = new Dictionary<string, string?>();
+                    versions = new Dictionary<string, CacheEntry>();
                     cache[key.Name] = versions;
                 }
 
-                versions[key.Version] = license;
+                versions[key.Version] = new CacheEntry { License = info.License, PublishedDate = info.PublishedDate };
             }
 
             SaveCache(cache);
@@ -91,14 +93,14 @@ public static class NugetLicenseResolver
         return results;
     }
 
-    private static Dictionary<string, Dictionary<string, string?>> LoadCache()
+    private static Dictionary<string, Dictionary<string, CacheEntry>> LoadCache()
     {
         try
         {
             if (File.Exists(CacheFileName))
             {
                 var json = File.ReadAllText(CacheFileName);
-                return JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string?>>>(json) ?? [];
+                return JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, CacheEntry>>>(json) ?? [];
             }
         }
         catch (Exception ex)
@@ -109,7 +111,7 @@ public static class NugetLicenseResolver
         return [];
     }
 
-    private static void SaveCache(Dictionary<string, Dictionary<string, string?>> cache)
+    private static void SaveCache(Dictionary<string, Dictionary<string, CacheEntry>> cache)
     {
         try
         {
@@ -128,10 +130,10 @@ public static class NugetLicenseResolver
         }
     }
 
-    private static async Task<string?> GetLicenseAsync(string packageName, string? version)
+    private static async Task<PackageInfo> GetPackageInfoAsync(string packageName, string? version)
     {
         if (string.IsNullOrWhiteSpace(packageName))
-            return null;
+            return new PackageInfo(null, null);
 
         try
         {
@@ -139,11 +141,11 @@ public static class NugetLicenseResolver
             var response = await HttpClient.GetAsync(url);
 
             if (!response.IsSuccessStatusCode)
-                return null;
+                return new PackageInfo(null, null);
 
             var registration = await response.Content.ReadFromJsonAsync<RegistrationIndex>();
             if (registration?.Items == null)
-                return null;
+                return new PackageInfo(null, null);
 
             // Search through pages for the matching version
             foreach (var page in registration.Items)
@@ -172,7 +174,9 @@ public static class NugetLicenseResolver
 
                     if (string.Equals(catalogEntry.Version, version, StringComparison.OrdinalIgnoreCase))
                     {
-                        return !string.IsNullOrEmpty(catalogEntry.LicenseExpression) ? catalogEntry.LicenseExpression : catalogEntry.LicenseUrl;
+                        var license = !string.IsNullOrEmpty(catalogEntry.LicenseExpression) ? catalogEntry.LicenseExpression : catalogEntry.LicenseUrl;
+                        var publishedDate = catalogEntry.Published?.ToString("yyyy-MM-dd");
+                        return new PackageInfo(license, publishedDate);
                     }
                 }
             }
@@ -182,7 +186,16 @@ public static class NugetLicenseResolver
             Console.WriteLine($"Warning: Failed to fetch license for {packageName} {version}: {ex.Message}");
         }
 
-        return null;
+        return new PackageInfo(null, null);
+    }
+
+    private class CacheEntry
+    {
+        [JsonPropertyName("license")]
+        public string? License { get; set; }
+
+        [JsonPropertyName("publishedDate")]
+        public string? PublishedDate { get; set; }
     }
 
     private class RegistrationIndex
@@ -216,5 +229,8 @@ public static class NugetLicenseResolver
 
         [JsonPropertyName("licenseUrl")]
         public string? LicenseUrl { get; set; }
+
+        [JsonPropertyName("published")]
+        public DateTimeOffset? Published { get; set; }
     }
 }
