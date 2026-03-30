@@ -1,6 +1,6 @@
 namespace CheckNpmPackages.Tests;
 
-public class NpmLicenseResolverTests
+public class NpmPackageResolverTests
 {
     [Fact]
     public async Task GetLicensesAsync_KnownPackage_ReturnsLicenseAndPublishedDate()
@@ -10,7 +10,7 @@ public class NpmLicenseResolverTests
             ("lodash", "4.17.21"),
         };
 
-        var results = await NpmLicenseResolver.GetLicensesAsync(packages);
+        var results = await NpmPackgeResolver.GetLicensesAsync(packages);
 
         Assert.Single(results);
         var info = results[("lodash", "4.17.21")];
@@ -26,7 +26,7 @@ public class NpmLicenseResolverTests
             ("nonexistent-pkg-xyz-99999", "0.0.1"),
         };
 
-        var results = await NpmLicenseResolver.GetLicensesAsync(packages);
+        var results = await NpmPackgeResolver.GetLicensesAsync(packages);
 
         Assert.Single(results);
         var info = results[("nonexistent-pkg-xyz-99999", "0.0.1")];
@@ -43,7 +43,7 @@ public class NpmLicenseResolverTests
             ("express", "4.18.2"),
         };
 
-        var results = await NpmLicenseResolver.GetLicensesAsync(packages);
+        var results = await NpmPackgeResolver.GetLicensesAsync(packages);
 
         Assert.Equal(2, results.Count);
         Assert.NotNull(results[("lodash", "4.17.21")].License);
@@ -59,7 +59,7 @@ public class NpmLicenseResolverTests
             ("lodash", "4.17.21"),
         };
 
-        var results = await NpmLicenseResolver.GetLicensesAsync(packages);
+        var results = await NpmPackgeResolver.GetLicensesAsync(packages);
 
         Assert.Single(results);
     }
@@ -72,7 +72,7 @@ public class NpmLicenseResolverTests
             ("lodash", "4.17.21"),
         };
 
-        var results = await NpmLicenseResolver.GetLicensesAsync(packages);
+        var results = await NpmPackgeResolver.GetLicensesAsync(packages);
 
         var info = results[("lodash", "4.17.21")];
         Assert.NotNull(info.PublishedDate);
@@ -82,7 +82,7 @@ public class NpmLicenseResolverTests
     [Fact]
     public async Task GetLicensesAsync_EmptyInput_ReturnsEmptyDictionary()
     {
-        var results = await NpmLicenseResolver.GetLicensesAsync([]);
+        var results = await NpmPackgeResolver.GetLicensesAsync([]);
         Assert.Empty(results);
     }
 
@@ -105,7 +105,7 @@ public class NpmLicenseResolverTests
     [InlineData("<=2.0.0", "2.0.0")]
     public void FormatVersion_StripsAndFormatsCorrectly(string? input, string expected)
     {
-        var result = NpmLicenseResolver.FormatVersion(input);
+        var result = NpmPackgeResolver.FormatVersion(input);
         Assert.Equal(expected, result);
     }
 }

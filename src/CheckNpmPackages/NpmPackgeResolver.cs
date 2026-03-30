@@ -7,7 +7,7 @@ namespace CheckNpmPackages;
 
 public record PackageInfo(string? License, string? PublishedDate);
 
-public static class NpmLicenseResolver
+public static class NpmPackgeResolver
 {
     private static readonly HttpClient HttpClient = new(new HttpClientHandler
     {

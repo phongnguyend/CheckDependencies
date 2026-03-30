@@ -245,3 +245,5 @@ This project is licensed under the terms specified in the LICENSE file.
 - [Report Issues](https://github.com/phongnguyend/CheckDependencies/issues)
 - [CheckNugetPackages.DotNetCliTool on NuGet](https://www.nuget.org/packages/CheckNugetPackages.DotNetCliTool)
 - [CheckNpmPackages.DotNetCliTool on NuGet](https://www.nuget.org/packages/CheckNpmPackages.DotNetCliTool)
+- [NuGet Package Version Reference | Microsoft Learn](https://learn.microsoft.com/en-us/nuget/concepts/package-versioning?tabs=semver20sort)
+- [Central Package Management | Microsoft Learn](https://learn.microsoft.com/en-us/nuget/consume-packages/central-package-management)

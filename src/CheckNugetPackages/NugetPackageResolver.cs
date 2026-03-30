@@ -7,7 +7,7 @@ namespace CheckNugetPackages;
 
 public record PackageInfo(string? License, string? PublishedDate);
 
-public static class NugetLicenseResolver
+public static class NugetPackageResolver
 {
     private static readonly HttpClient HttpClient = new(new HttpClientHandler
     {

@@ -1,6 +1,6 @@
 namespace CheckNugetPackages.Tests;
 
-public class NugetLicenseResolverTests
+public class NugetPackageResolverTests
 {
     [Fact]
     public async Task GetLicensesAsync_KnownPackage_ReturnsLicenseAndPublishedDate()
@@ -10,7 +10,7 @@ public class NugetLicenseResolverTests
             ("Newtonsoft.Json", "13.0.3"),
         };
 
-        var results = await NugetLicenseResolver.GetLicensesAsync(packages);
+        var results = await NugetPackageResolver.GetLicensesAsync(packages);
 
         Assert.Single(results);
         var info = results[("Newtonsoft.Json", "13.0.3")];
@@ -26,7 +26,7 @@ public class NugetLicenseResolverTests
             ("NonExistentPackage_XYZ_12345", "0.0.1"),
         };
 
-        var results = await NugetLicenseResolver.GetLicensesAsync(packages);
+        var results = await NugetPackageResolver.GetLicensesAsync(packages);
 
         Assert.Single(results);
         var info = results[("NonExistentPackage_XYZ_12345", "0.0.1")];
@@ -43,7 +43,7 @@ public class NugetLicenseResolverTests
             ("Serilog", "4.0.0"),
         };
 
-        var results = await NugetLicenseResolver.GetLicensesAsync(packages);
+        var results = await NugetPackageResolver.GetLicensesAsync(packages);
 
         Assert.Equal(2, results.Count);
         Assert.NotNull(results[("Newtonsoft.Json", "13.0.3")].License);
@@ -59,7 +59,7 @@ public class NugetLicenseResolverTests
             ("Newtonsoft.Json", "13.0.3"),
         };
 
-        var results = await NugetLicenseResolver.GetLicensesAsync(packages);
+        var results = await NugetPackageResolver.GetLicensesAsync(packages);
 
         Assert.Single(results);
     }
@@ -73,7 +73,7 @@ public class NugetLicenseResolverTests
             ("Castle.Core", "4.4.0"),
         };
 
-        var results = await NugetLicenseResolver.GetLicensesAsync(packages);
+        var results = await NugetPackageResolver.GetLicensesAsync(packages);
 
         Assert.Single(results);
         var info = results[("Castle.Core", "4.4.0")];
@@ -88,7 +88,7 @@ public class NugetLicenseResolverTests
             ("Newtonsoft.Json", "13.0.3"),
         };
 
-        var results = await NugetLicenseResolver.GetLicensesAsync(packages);
+        var results = await NugetPackageResolver.GetLicensesAsync(packages);
 
         var info = results[("Newtonsoft.Json", "13.0.3")];
         Assert.NotNull(info.PublishedDate);
@@ -98,7 +98,7 @@ public class NugetLicenseResolverTests
     [Fact]
     public async Task GetLicensesAsync_EmptyInput_ReturnsEmptyDictionary()
     {
-        var results = await NugetLicenseResolver.GetLicensesAsync([]);
+        var results = await NugetPackageResolver.GetLicensesAsync([]);
         Assert.Empty(results);
     }
 }
