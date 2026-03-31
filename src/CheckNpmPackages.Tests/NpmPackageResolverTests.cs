@@ -121,26 +121,245 @@ public class NpmPackageResolverTests
         Assert.Empty(results);
     }
 
-    [Theory]
-    [InlineData(null, "")]
-    [InlineData("", "")]
-    [InlineData("  ", "")]
-    [InlineData("1.0.0", "1.0.0")]
-    [InlineData("^1.0.0", "1.0.0")]
-    [InlineData("~1.0.0", "1.0.0")]
-    [InlineData("v1.0.0", "1.0.0")]
-    [InlineData("=1.0.0", "1.0.0")]
-    [InlineData("^^1.0.0", "1.0.0")]
-    [InlineData(">=1.0.0 <2.0.0", "1.0.0")]
-    [InlineData("^1.0.0 || ^2.0.0", "1.0.0")]
-    [InlineData("1.0.0 - 2.0.0", "1.0.0")]
-    [InlineData(">1.0.0", "1.0.0")]
-    [InlineData(">=1.0.0", "1.0.0")]
-    [InlineData("<2.0.0", "2.0.0")]
-    [InlineData("<=2.0.0", "2.0.0")]
-    public void FormatVersion_StripsAndFormatsCorrectly(string? input, string expected)
+    [Fact]
+    public async Task GetLicensesAsync_CaretRange_ResolvesToMatchingVersion()
     {
-        var result = NpmPackgeResolver.FormatVersion(input);
-        Assert.Equal(expected, result);
+        // ^4.17.0 should resolve to the highest 4.x.x version >= 4.17.0
+        var packages = new List<(string Name, string Version)>
+        {
+            ("lodash", "^4.17.0"),
+        };
+
+        var results = await NpmPackgeResolver.GetLicensesAsync(packages);
+
+        Assert.Single(results);
+        var info = results[("lodash", "^4.17.0")];
+        Assert.NotNull(info.ResolvedVersion);
+        Assert.StartsWith("4.", info.ResolvedVersion);
+        Assert.NotNull(info.License);
+        Assert.Equal("MIT", info.License);
+    }
+
+    [Fact]
+    public async Task GetLicensesAsync_TildeRange_ResolvesToMatchingVersion()
+    {
+        // ~4.17.0 should resolve to the highest 4.17.x version
+        var packages = new List<(string Name, string Version)>
+        {
+            ("lodash", "~4.17.0"),
+        };
+
+        var results = await NpmPackgeResolver.GetLicensesAsync(packages);
+
+        Assert.Single(results);
+        var info = results[("lodash", "~4.17.0")];
+        Assert.NotNull(info.ResolvedVersion);
+        Assert.StartsWith("4.17.", info.ResolvedVersion);
+        Assert.NotNull(info.License);
+    }
+
+    [Fact]
+    public void ResolveVersion_ExactVersion_ReturnsExactMatch()
+    {
+        var versions = ParseVersions("1.0.0", "1.1.0", "2.0.0");
+        var result = NpmPackgeResolver.ResolveVersion("1.1.0", versions);
+        Assert.Equal("1.1.0", result);
+    }
+
+    [Fact]
+    public void ResolveVersion_CaretRange_ReturnsHighestCompatible()
+    {
+        var versions = ParseVersions("1.0.0", "1.2.0", "1.9.9", "2.0.0", "2.1.0");
+        var result = NpmPackgeResolver.ResolveVersion("^1.0.0", versions);
+        Assert.Equal("1.9.9", result);
+    }
+
+    [Fact]
+    public void ResolveVersion_CaretZeroMajor_ReturnsHighestMinorCompatible()
+    {
+        // ^0.2.3 := >=0.2.3 <0.3.0
+        var versions = ParseVersions("0.2.3", "0.2.5", "0.3.0", "1.0.0");
+        var result = NpmPackgeResolver.ResolveVersion("^0.2.3", versions);
+        Assert.Equal("0.2.5", result);
+    }
+
+    [Fact]
+    public void ResolveVersion_CaretZeroZero_ReturnsExactPatch()
+    {
+        // ^0.0.3 := >=0.0.3 <0.0.4
+        var versions = ParseVersions("0.0.2", "0.0.3", "0.0.4", "0.1.0");
+        var result = NpmPackgeResolver.ResolveVersion("^0.0.3", versions);
+        Assert.Equal("0.0.3", result);
+    }
+
+    [Fact]
+    public void ResolveVersion_TildeRange_ReturnsHighestPatch()
+    {
+        // ~1.2.3 := >=1.2.3 <1.3.0
+        var versions = ParseVersions("1.2.3", "1.2.5", "1.3.0", "2.0.0");
+        var result = NpmPackgeResolver.ResolveVersion("~1.2.3", versions);
+        Assert.Equal("1.2.5", result);
+    }
+
+    [Fact]
+    public void ResolveVersion_TildeMajorOnly_ReturnsHighestInMajor()
+    {
+        // ~1 := >=1.0.0 <2.0.0
+        var versions = ParseVersions("1.0.0", "1.5.0", "1.9.9", "2.0.0");
+        var result = NpmPackgeResolver.ResolveVersion("~1", versions);
+        Assert.Equal("1.9.9", result);
+    }
+
+    [Fact]
+    public void ResolveVersion_GteAndLt_ReturnsHighestInRange()
+    {
+        var versions = ParseVersions("1.0.0", "1.5.0", "2.0.0", "3.0.0");
+        var result = NpmPackgeResolver.ResolveVersion(">=1.0.0 <2.0.0", versions);
+        Assert.Equal("1.5.0", result);
+    }
+
+    [Fact]
+    public void ResolveVersion_OrRange_ReturnsHighestFromAnySet()
+    {
+        var versions = ParseVersions("1.0.0", "1.5.0", "2.0.0", "2.5.0", "3.0.0");
+        var result = NpmPackgeResolver.ResolveVersion("^1.0.0 || ^2.0.0", versions);
+        Assert.Equal("2.5.0", result);
+    }
+
+    [Fact]
+    public void ResolveVersion_HyphenRange_ReturnsHighestInRange()
+    {
+        // 1.0.0 - 2.0.0 := >=1.0.0 <=2.0.0
+        var versions = ParseVersions("0.9.0", "1.0.0", "1.5.0", "2.0.0", "2.1.0");
+        var result = NpmPackgeResolver.ResolveVersion("1.0.0 - 2.0.0", versions);
+        Assert.Equal("2.0.0", result);
+    }
+
+    [Fact]
+    public void ResolveVersion_Star_ReturnsHighestNonPrerelease()
+    {
+        var versions = ParseVersions("1.0.0", "2.0.0", "3.0.0");
+        var result = NpmPackgeResolver.ResolveVersion("*", versions);
+        Assert.Equal("3.0.0", result);
+    }
+
+    [Fact]
+    public void ResolveVersion_XRange_ReturnsHighestInMajor()
+    {
+        // 1.x := >=1.0.0 <2.0.0
+        var versions = ParseVersions("1.0.0", "1.5.0", "2.0.0");
+        var result = NpmPackgeResolver.ResolveVersion("1.x", versions);
+        Assert.Equal("1.5.0", result);
+    }
+
+    [Fact]
+    public void ResolveVersion_XRangeMinor_ReturnsHighestInMinor()
+    {
+        // 1.2.x := >=1.2.0 <1.3.0
+        var versions = ParseVersions("1.2.0", "1.2.5", "1.3.0", "2.0.0");
+        var result = NpmPackgeResolver.ResolveVersion("1.2.x", versions);
+        Assert.Equal("1.2.5", result);
+    }
+
+    [Fact]
+    public void ResolveVersion_PartialMajor_ReturnsHighestInMajor()
+    {
+        // "1" := >=1.0.0 <2.0.0
+        var versions = ParseVersions("1.0.0", "1.9.0", "2.0.0");
+        var result = NpmPackgeResolver.ResolveVersion("1", versions);
+        Assert.Equal("1.9.0", result);
+    }
+
+    [Fact]
+    public void ResolveVersion_PartialMajorMinor_ReturnsHighestInMinor()
+    {
+        // "1.2" := >=1.2.0 <1.3.0
+        var versions = ParseVersions("1.2.0", "1.2.9", "1.3.0");
+        var result = NpmPackgeResolver.ResolveVersion("1.2", versions);
+        Assert.Equal("1.2.9", result);
+    }
+
+    [Fact]
+    public void ResolveVersion_GreaterThan_ReturnsHighestAbove()
+    {
+        var versions = ParseVersions("1.0.0", "1.5.0", "2.0.0");
+        var result = NpmPackgeResolver.ResolveVersion(">1.0.0", versions);
+        Assert.Equal("2.0.0", result);
+    }
+
+    [Fact]
+    public void ResolveVersion_LessThan_ReturnsHighestBelow()
+    {
+        var versions = ParseVersions("1.0.0", "1.5.0", "2.0.0");
+        var result = NpmPackgeResolver.ResolveVersion("<2.0.0", versions);
+        Assert.Equal("1.5.0", result);
+    }
+
+    [Fact]
+    public void ResolveVersion_ExcludesPrerelease_ByDefault()
+    {
+        var versions = ParseVersions("1.0.0", "1.1.0", "2.0.0-alpha.1", "2.0.0");
+        var result = NpmPackgeResolver.ResolveVersion("^1.0.0", versions);
+        Assert.Equal("1.1.0", result);
+    }
+
+    [Fact]
+    public void ResolveVersion_IncludesPrerelease_WhenExplicitlyReferenced()
+    {
+        // ^2.0.0-alpha.0 should include prereleases on the same [major, minor, patch]
+        var versions = ParseVersions("1.0.0", "2.0.0-alpha.1", "2.0.0-beta.1", "2.0.0");
+        var result = NpmPackgeResolver.ResolveVersion("^2.0.0-alpha.0", versions);
+        Assert.Equal("2.0.0", result);
+    }
+
+    [Fact]
+    public void ResolveVersion_NoMatch_ReturnsNull()
+    {
+        var versions = ParseVersions("1.0.0", "2.0.0");
+        var result = NpmPackgeResolver.ResolveVersion("^3.0.0", versions);
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void ResolveVersion_NullInput_ReturnsNull()
+    {
+        var versions = ParseVersions("1.0.0");
+        var result = NpmPackgeResolver.ResolveVersion(null, versions);
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void ResolveVersion_EmptyInput_ReturnsNull()
+    {
+        var versions = ParseVersions("1.0.0");
+        var result = NpmPackgeResolver.ResolveVersion("", versions);
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void ResolveVersion_LeadingV_ResolvesCorrectly()
+    {
+        var versions = ParseVersions("1.0.0", "1.5.0", "2.0.0");
+        var result = NpmPackgeResolver.ResolveVersion("v1.0.0", versions);
+        Assert.Equal("1.0.0", result);
+    }
+
+    [Fact]
+    public void ResolveVersion_LeadingEquals_ResolvesCorrectly()
+    {
+        var versions = ParseVersions("1.0.0", "1.5.0", "2.0.0");
+        var result = NpmPackgeResolver.ResolveVersion("=1.5.0", versions);
+        Assert.Equal("1.5.0", result);
+    }
+
+    private static List<SemVer> ParseVersions(params string[] versions)
+    {
+        var result = new List<SemVer>();
+        foreach (var v in versions)
+        {
+            if (SemVer.TryParse(v, out var sv))
+                result.Add(sv);
+        }
+        return result;
     }
 }
