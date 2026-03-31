@@ -51,6 +51,7 @@ public class HtmlReportGeneratorTests : IDisposable
         var html = GenerateAndRead("Test Report", [], []);
         Assert.Contains("<th>Name</th>", html);
         Assert.Contains("<th>Version</th>", html);
+        Assert.Contains("<th>Resolved Version</th>", html);
         Assert.Contains("<th>License</th>", html);
         Assert.Contains("<th>Published Date</th>", html);
         Assert.Contains("<th>Latest Version</th>", html);
@@ -64,7 +65,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("lodash", "4.17.21", "my-app", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", "4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20"),
+            new("lodash", "4.17.21", "4.17.21", "my-app", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", "4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20"),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -82,8 +83,8 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("@types/node", "20.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", "20.1.0", "https://example.com/latest", "MIT", "2024-02-01"),
-            new("lodash", "4.17.21", "my-app", "https://example.com", "MIT", "2021-02-20", "4.17.21", "https://example.com/latest", "MIT", "2021-02-20"),
+            new("@types/node", "20.0.0", "20.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", "20.1.0", "https://example.com/latest", "MIT", "2024-02-01"),
+            new("lodash", "4.17.21", "4.17.21", "my-app", "https://example.com", "MIT", "2021-02-20", "4.17.21", "https://example.com/latest", "MIT", "2021-02-20"),
         };
 
         var html = GenerateAndRead("Test Report", packages, ["@types/"]);
@@ -97,7 +98,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", "1.0.0", "my-app", "https://example.com", null, "2024-01-01", "1.0.0", null, null, null),
+            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", null, "2024-01-01", "1.0.0", null, null, null),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -110,7 +111,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", "1.0.0", "my-app", "https://example.com", "MIT", null, "1.0.0", null, "MIT", null),
+            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", null, "1.0.0", null, "MIT", null),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -123,11 +124,12 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", null, "my-app", "https://example.com", "MIT", "2024-01-01", "1.0.0", null, "MIT", "2024-01-01"),
+            new("some-pkg", null, null, "my-app", "https://example.com", "MIT", "2024-01-01", "1.0.0", null, "MIT", "2024-01-01"),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
 
+        Assert.Contains("<td class=\"version\">N/A</td>", html);
         Assert.Contains(">N/A</a>", html);
     }
 
@@ -136,7 +138,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", "1.0.0", "my-app", "https://example.com", "https://opensource.org/licenses/MIT", "2024-01-01", "1.0.0", null, "MIT", "2024-01-01"),
+            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "https://opensource.org/licenses/MIT", "2024-01-01", "1.0.0", null, "MIT", "2024-01-01"),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -149,7 +151,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("pkg<name>", "1.0.0", "project&a", "https://example.com", "license&co", "2024-01-01", "1.0.0", null, "license&co", "2024-01-01"),
+            new("pkg<name>", "1.0.0", "1.0.0", "project&a", "https://example.com", "license&co", "2024-01-01", "1.0.0", null, "license&co", "2024-01-01"),
         };
 
         var html = GenerateAndRead("Title<>&", packages, []);
@@ -167,6 +169,7 @@ public class HtmlReportGeneratorTests : IDisposable
         Assert.Contains("<style>", html);
         Assert.Contains(".package-name", html);
         Assert.Contains(".published-date", html);
+        Assert.Contains(".different", html);
     }
 
     [Fact]
@@ -182,13 +185,13 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("lodash", "4.17.20", "my-app", "https://www.npmjs.com/package/lodash/v/4.17.20", "MIT", "2020-10-27", "4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20"),
+            new("lodash", "4.17.20", "4.17.20", "my-app", "https://www.npmjs.com/package/lodash/v/4.17.20", "MIT", "2020-10-27", "4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20"),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
 
-        Assert.Contains("<a href=\"https://www.npmjs.com/package/lodash/v/4.17.21\" target=\"_blank\">4.17.21</a>", html);
-        Assert.Contains("2021-02-20", html);
+        Assert.Contains("<strong><a href=\"https://www.npmjs.com/package/lodash/v/4.17.21\" target=\"_blank\">4.17.21</a></strong>", html);
+        Assert.Contains("<strong>2021-02-20</strong>", html);
     }
 
     [Fact]
@@ -196,7 +199,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, null, null, null),
+            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, null, null, null),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -204,6 +207,77 @@ public class HtmlReportGeneratorTests : IDisposable
         // Latest version N/A, latest license N/A, latest published date N/A
         var latestVersionCount = CountOccurrences(html, "N/A");
         Assert.True(latestVersionCount >= 3);
+    }
+
+    [Fact]
+    public void Generate_LatestVersionSameAsCurrent_NoBold()
+    {
+        var packages = new List<PackageEntry>
+        {
+            new("lodash", "4.17.21", "4.17.21", "my-app", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", "4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20"),
+        };
+
+        var html = GenerateAndRead("Test Report", packages, []);
+
+        Assert.DoesNotContain("<strong>", html);
+    }
+
+    [Fact]
+    public void Generate_LatestLicenseDiffers_RendersBold()
+    {
+        var packages = new List<PackageEntry>
+        {
+            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", "1.0.0", "https://example.com/latest", "Apache-2.0", "2024-01-01"),
+        };
+
+        var html = GenerateAndRead("Test Report", packages, []);
+
+        Assert.Contains("<strong>Apache-2.0</strong>", html);
+        Assert.DoesNotContain("<strong>1.0.0", html);
+        Assert.DoesNotContain("<strong>2024-01-01</strong>", html);
+    }
+
+    [Fact]
+    public void Generate_LatestPublishedDateDiffers_RendersBold()
+    {
+        var packages = new List<PackageEntry>
+        {
+            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", "1.0.0", "https://example.com/latest", "MIT", "2024-06-15"),
+        };
+
+        var html = GenerateAndRead("Test Report", packages, []);
+
+        Assert.Contains("<strong>2024-06-15</strong>", html);
+        Assert.DoesNotContain("<strong>MIT</strong>", html);
+    }
+
+    [Fact]
+    public void Generate_AllLatestFieldsDiffer_AllRenderBold()
+    {
+        var packages = new List<PackageEntry>
+        {
+            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", "2.0.0", "https://example.com/latest", "Apache-2.0", "2024-06-15"),
+        };
+
+        var html = GenerateAndRead("Test Report", packages, []);
+
+        Assert.Contains("<strong><a href=\"https://example.com/latest\" target=\"_blank\">2.0.0</a></strong>", html);
+        Assert.Contains("<strong>Apache-2.0</strong>", html);
+        Assert.Contains("<strong>2024-06-15</strong>", html);
+    }
+
+    [Fact]
+    public void Generate_ResolvedVersionDiffersFromVersion_BothRendered()
+    {
+        var packages = new List<PackageEntry>
+        {
+            new("some-pkg", "^1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", "1.0.0", "https://example.com/latest", "MIT", "2024-01-01"),
+        };
+
+        var html = GenerateAndRead("Test Report", packages, []);
+
+        Assert.Contains("<td class=\"version\">^1.0.0</td>", html);
+        Assert.Contains("<a href=\"https://example.com\" target=\"_blank\">1.0.0</a>", html);
     }
 
     private static int CountOccurrences(string text, string pattern)

@@ -29,8 +29,9 @@ public class PackageScanner
                 return new PackageEntry(
                     g.Key.Name,
                     g.Key.Version,
+                    info?.ResolvedVersion,
                     string.Join(", ", g.Select(x => x.Project)),
-                    $"https://www.nuget.org/packages/{g.Key.Name}/{g.Key.Version}",
+                    $"https://www.nuget.org/packages/{g.Key.Name}/{info?.ResolvedVersion}",
                     info?.License,
                     info?.PublishedDate,
                     info?.LatestVersion,

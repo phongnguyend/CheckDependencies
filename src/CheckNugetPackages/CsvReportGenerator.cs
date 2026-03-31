@@ -25,7 +25,8 @@ public static class CsvReportGenerator
             var latestLicenseValue = package.LatestLicense ?? "";
             var latestPublishedDateValue = package.LatestPublishedDate ?? "";
             var latestUrlValue = package.LatestUrl ?? "";
-            streamWriter.WriteLine($"{package.Name},{package.Version},\"{licenseValue}\",\"{publishedDateValue}\",\"{latestVersionValue}\",\"{latestLicenseValue}\",\"{latestPublishedDateValue}\",\"{package.Url}\",\"{latestUrlValue}\",\"{package.Projects}\"");
+            var resolvedVersionValue = package.ResolvedVersion ?? "";
+            streamWriter.WriteLine($"{package.Name},{package.Version},\"{resolvedVersionValue}\",\"{licenseValue}\",\"{publishedDateValue}\",\"{latestVersionValue}\",\"{latestLicenseValue}\",\"{latestPublishedDateValue}\",\"{package.Url}\",\"{latestUrlValue}\",\"{package.Projects}\"");
         }
     }
 }

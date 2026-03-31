@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace CheckNugetPackages;
 
-public record PackageInfo(string? License, string? PublishedDate, string? LatestVersion, string? LatestLicense, string? LatestPublishedDate);
+public record PackageInfo(string? ResolvedVersion, string? License, string? PublishedDate, string? LatestVersion, string? LatestLicense, string? LatestPublishedDate);
 
 public static class NugetPackageResolver
 {
@@ -57,13 +57,13 @@ public static class NugetPackageResolver
     private static async Task<PackageInfo> GetPackageInfoAsync(string packageName, string? version)
     {
         if (string.IsNullOrWhiteSpace(packageName))
-            return new PackageInfo(null, null, null, null, null);
+            return new PackageInfo(null, null, null, null, null, null);
 
         try
         {
             var registration = await GetRegistrationAsync(packageName);
             if (registration?.Items == null)
-                return new PackageInfo(null, null, null, null, null);
+                return new PackageInfo(null, null, null, null, null, null);
 
             string? license = null;
             string? publishedDate = null;
@@ -109,14 +109,14 @@ public static class NugetPackageResolver
                 latestPublishedDate = latestEntry.Published?.ToString("yyyy-MM-dd");
             }
 
-            return new PackageInfo(license, publishedDate, latestVersion, latestLicense, latestPublishedDate);
+            return new PackageInfo(version, license, publishedDate, latestVersion, latestLicense, latestPublishedDate);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Warning: Failed to fetch license for {packageName} {version}: {ex.Message}");
         }
 
-        return new PackageInfo(null, null, null, null, null);
+        return new PackageInfo(null, null, null, null, null, null);
     }
 
     private static Task<RegistrationIndex?> GetRegistrationAsync(string packageName)

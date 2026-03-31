@@ -27,8 +27,9 @@ public class PackageScanner
                 return new PackageEntry(
                     g.Key.Name,
                     g.Key.Version,
+                    info?.ResolvedVersion,
                     string.Join(", ", g.Select(x => x.Project)),
-                    $"https://www.npmjs.com/package/{g.Key.Name}/v/{NpmPackgeResolver.FormatVersion(g.Key.Version)}",
+                    $"https://www.npmjs.com/package/{g.Key.Name}/v/{info?.ResolvedVersion}",
                     info?.License,
                     info?.PublishedDate,
                     info?.LatestVersion,

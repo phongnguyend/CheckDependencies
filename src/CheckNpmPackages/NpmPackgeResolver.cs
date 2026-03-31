@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace CheckNpmPackages;
 
-public record PackageInfo(string? License, string? PublishedDate, string? LatestVersion, string? LatestLicense, string? LatestPublishedDate);
+public record PackageInfo(string? ResolvedVersion, string? License, string? PublishedDate, string? LatestVersion, string? LatestLicense, string? LatestPublishedDate);
 
 public static class NpmPackgeResolver
 {
@@ -57,7 +57,7 @@ public static class NpmPackgeResolver
     private static async Task<PackageInfo> GetPackageInfoAsync(string packageName, string? version)
     {
         if (string.IsNullOrWhiteSpace(packageName))
-            return new PackageInfo(null, null, null, null, null);
+            return new PackageInfo(null, null, null, null, null, null);
 
         try
         {
@@ -65,7 +65,7 @@ public static class NpmPackgeResolver
 
             var doc = await GetPackageDocAsync(packageName);
             if (doc == null)
-                return new PackageInfo(null, null, null, null, null);
+                return new PackageInfo(null, null, null, null, null, null);
 
             var docValue = doc.Value;
 
@@ -135,6 +135,7 @@ public static class NpmPackgeResolver
             }
 
             return new PackageInfo(
+                !string.IsNullOrEmpty(formattedVersion) ? formattedVersion : null,
                 !string.IsNullOrEmpty(license) ? license : null,
                 publishedDate,
                 latestVersion,
@@ -146,7 +147,7 @@ public static class NpmPackgeResolver
             Console.WriteLine($"Warning: Failed to fetch license for {packageName} {version}: {ex.Message}");
         }
 
-        return new PackageInfo(null, null, null, null, null);
+        return new PackageInfo(null, null, null, null, null, null);
     }
 
     private static Task<JsonElement?> GetPackageDocAsync(string packageName)

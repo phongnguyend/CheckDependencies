@@ -30,6 +30,7 @@ public static class HtmlReportGenerator
         streamWriter.WriteLine("        .license { font-size: 0.9em; }");
         streamWriter.WriteLine("        .published-date { font-size: 0.9em; font-family: monospace; }");
         streamWriter.WriteLine("        .projects { font-size: 0.9em; color: #666; }");
+        streamWriter.WriteLine("        .different { font-weight: bold; }");
         streamWriter.WriteLine("    </style>");
         streamWriter.WriteLine("</head>");
         streamWriter.WriteLine("<body>");
@@ -40,6 +41,7 @@ public static class HtmlReportGenerator
         streamWriter.WriteLine("            <tr>");
         streamWriter.WriteLine("                <th>Name</th>");
         streamWriter.WriteLine("                <th>Version</th>");
+        streamWriter.WriteLine("                <th>Resolved Version</th>");
         streamWriter.WriteLine("                <th>License</th>");
         streamWriter.WriteLine("                <th>Published Date</th>");
         streamWriter.WriteLine("                <th>Latest Version</th>");
@@ -65,9 +67,21 @@ public static class HtmlReportGenerator
             var latestLicenseHtml = FormatLicenseHtml(package.LatestLicense);
             var latestPublishedDateHtml = System.Net.WebUtility.HtmlEncode(package.LatestPublishedDate ?? "N/A");
 
+            var versionDiffers = !string.Equals(package.ResolvedVersion, package.LatestVersion, StringComparison.OrdinalIgnoreCase);
+            var licenseDiffers = !string.Equals(package.License, package.LatestLicense, StringComparison.OrdinalIgnoreCase);
+            var publishedDateDiffers = !string.Equals(package.PublishedDate, package.LatestPublishedDate, StringComparison.OrdinalIgnoreCase);
+
+            if (versionDiffers)
+                latestVersionHtml = $"<strong>{latestVersionHtml}</strong>";
+            if (licenseDiffers)
+                latestLicenseHtml = $"<strong>{latestLicenseHtml}</strong>";
+            if (publishedDateDiffers)
+                latestPublishedDateHtml = $"<strong>{latestPublishedDateHtml}</strong>";
+
             streamWriter.WriteLine("            <tr>");
             streamWriter.WriteLine($"                <td class=\"package-name\">{System.Net.WebUtility.HtmlEncode(package.Name)}</td>");
-            streamWriter.WriteLine($"                <td class=\"version\"><a href=\"{package.Url}\" target=\"_blank\">{System.Net.WebUtility.HtmlEncode(package.Version ?? "N/A")}</a></td>");
+            streamWriter.WriteLine($"                <td class=\"version\">{System.Net.WebUtility.HtmlEncode(package.Version ?? "N/A")}</td>");
+            streamWriter.WriteLine($"                <td class=\"version\"><a href=\"{package.Url}\" target=\"_blank\">{System.Net.WebUtility.HtmlEncode(package.ResolvedVersion ?? "N/A")}</a></td>");
             streamWriter.WriteLine($"                <td class=\"license\">{licenseHtml}</td>");
             streamWriter.WriteLine($"                <td class=\"published-date\">{publishedDateHtml}</td>");
             streamWriter.WriteLine($"                <td class=\"version\">{latestVersionHtml}</td>");
