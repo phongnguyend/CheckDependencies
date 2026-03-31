@@ -60,6 +60,35 @@ public static class NpmPackgeResolver
 
         await Task.WhenAll(tasks);
 
+        // Fetch vulnerabilities in bulk to avoid many requests
+        var bulkVulnMap = await FetchBulkVulnerabilitiesAsync(results);
+        if (bulkVulnMap != null)
+        {
+            foreach (var key in results.Keys.ToList())
+            {
+                var info = results[key];
+                string? vulnerabilities = null;
+                string? latestVulnerabilities = null;
+
+                if (!string.IsNullOrWhiteSpace(info.ResolvedVersion) &&
+                    bulkVulnMap.TryGetValue((key.Name, info.ResolvedVersion), out var rv))
+                    vulnerabilities = rv;
+
+                if (!string.IsNullOrWhiteSpace(info.LatestVersion) &&
+                    bulkVulnMap.TryGetValue((key.Name, info.LatestVersion), out var lv))
+                    latestVulnerabilities = lv;
+
+                if (vulnerabilities != null || latestVulnerabilities != null)
+                {
+                    results[key] = info with
+                    {
+                        Vulnerabilities = vulnerabilities ?? info.Vulnerabilities,
+                        LatestVulnerabilities = latestVulnerabilities ?? info.LatestVulnerabilities
+                    };
+                }
+            }
+        }
+
         return results;
     }
 
@@ -170,29 +199,17 @@ public static class NpmPackgeResolver
                 }
             }
 
-            // Fetch vulnerability info via bulk audit API
-            string? vulnerabilities = null;
-            string? latestVulnerabilities = null;
-            var vulnMap = await FetchVulnerabilitiesAsync(packageName, resolvedVersion, latestVersion);
-            if (vulnMap != null)
-            {
-                if (!string.IsNullOrWhiteSpace(resolvedVersion) && vulnMap.TryGetValue(resolvedVersion, out var rv))
-                    vulnerabilities = rv;
-                if (!string.IsNullOrWhiteSpace(latestVersion) && vulnMap.TryGetValue(latestVersion, out var lv))
-                    latestVulnerabilities = lv;
-            }
-
             return new PackageInfo(
                 !string.IsNullOrEmpty(resolvedVersion) ? resolvedVersion : null,
                 !string.IsNullOrEmpty(license) ? license : null,
                 publishedDate,
                 deprecated,
-                vulnerabilities,
+                null,
                 latestVersion,
                 !string.IsNullOrEmpty(latestLicense) ? latestLicense : null,
                 latestPublishedDate,
                 latestDeprecated,
-                latestVulnerabilities);
+                null);
         }
         catch (Exception ex)
         {
@@ -220,73 +237,95 @@ public static class NpmPackgeResolver
         return null;
     }
 
-    private static async Task<Dictionary<string, string>?> FetchVulnerabilitiesAsync(string packageName, string? resolvedVersion, string? latestVersion)
+    /// <summary>
+    /// Fetches vulnerabilities for all packages in a single bulk request to reduce HTTP calls.
+    /// Returns a map of (packageName, version) -> vulnerability description string.
+    /// </summary>
+    private static async Task<Dictionary<(string Name, string Version), string>?> FetchBulkVulnerabilitiesAsync(
+        Dictionary<(string Name, string Version, string? ResolvedVersion), PackageInfo> results)
     {
         try
         {
-            var versions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            if (!string.IsNullOrWhiteSpace(resolvedVersion))
-                versions.Add(resolvedVersion);
-            if (!string.IsNullOrWhiteSpace(latestVersion))
-                versions.Add(latestVersion);
+            // Build a payload mapping each package name to all its distinct versions
+            var payload = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
-            if (versions.Count == 0)
-                return null;
-
-            // POST to the bulk audit endpoint
-            var payload = new Dictionary<string, List<string>>
+            foreach (var (key, info) in results)
             {
-                [packageName] = [.. versions]
-            };
+                var versions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                if (!string.IsNullOrWhiteSpace(info.ResolvedVersion))
+                    versions.Add(info.ResolvedVersion);
+                if (!string.IsNullOrWhiteSpace(info.LatestVersion))
+                    versions.Add(info.LatestVersion);
+
+                if (versions.Count == 0)
+                    continue;
+
+                if (!payload.TryGetValue(key.Name, out var existing))
+                {
+                    existing = [];
+                    payload[key.Name] = existing;
+                }
+
+                foreach (var v in versions)
+                {
+                    if (!existing.Contains(v, StringComparer.OrdinalIgnoreCase))
+                        existing.Add(v);
+                }
+            }
+
+            if (payload.Count == 0)
+                return null;
 
             var response = await HttpClient.PostAsJsonAsync(AuditBaseUrl, payload);
             if (!response.IsSuccessStatusCode)
                 return null;
 
-            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var doc = await response.Content.ReadFromJsonAsync<JsonElement>();
-
             if (doc.ValueKind != JsonValueKind.Object)
                 return null;
 
-            // The response is: { "<packageName>": [ { "severity": "...", "url": "...", "vulnerable_versions": "..." }, ... ] }
-            if (!doc.TryGetProperty(packageName, out var advisories) || advisories.ValueKind != JsonValueKind.Array)
-                return result;
+            var result = new Dictionary<(string Name, string Version), string>();
 
-            foreach (var version in versions)
+            foreach (var (packageName, versionsList) in payload)
             {
-                var matchingAdvisories = new List<string>();
-                foreach (var advisory in advisories.EnumerateArray())
+                if (!doc.TryGetProperty(packageName, out var advisories) || advisories.ValueKind != JsonValueKind.Array)
+                    continue;
+
+                foreach (var version in versionsList)
                 {
-                    var vulnerableVersions = advisory.TryGetProperty("vulnerable_versions", out var vv) && vv.ValueKind == JsonValueKind.String
-                        ? vv.GetString()
-                        : null;
-
-                    if (!string.IsNullOrWhiteSpace(vulnerableVersions) && SemVer.TryParse(version, out var sv))
+                    var matchingAdvisories = new List<string>();
+                    foreach (var advisory in advisories.EnumerateArray())
                     {
-                        var comparatorSets = ParseRange(vulnerableVersions);
-                        if (comparatorSets.Count > 0 && SatisfiesRange(sv, comparatorSets))
-                        {
-                            var severity = advisory.TryGetProperty("severity", out var sev) && sev.ValueKind == JsonValueKind.String
-                                ? sev.GetString() ?? "Unknown"
-                                : "Unknown";
-                            var url = advisory.TryGetProperty("url", out var u) && u.ValueKind == JsonValueKind.String
-                                ? u.GetString()
-                                : null;
-                            var title = advisory.TryGetProperty("title", out var t) && t.ValueKind == JsonValueKind.String
-                                ? t.GetString()
-                                : null;
+                        var vulnerableVersions = advisory.TryGetProperty("vulnerable_versions", out var vv) && vv.ValueKind == JsonValueKind.String
+                            ? vv.GetString()
+                            : null;
 
-                            var desc = !string.IsNullOrWhiteSpace(title) ? $"{severity}: {title}" : severity;
-                            if (!string.IsNullOrWhiteSpace(url))
-                                desc += $" ({url})";
-                            matchingAdvisories.Add(desc);
+                        if (!string.IsNullOrWhiteSpace(vulnerableVersions) && SemVer.TryParse(version, out var sv))
+                        {
+                            var comparatorSets = ParseRange(vulnerableVersions);
+                            if (comparatorSets.Count > 0 && SatisfiesRange(sv, comparatorSets))
+                            {
+                                var severity = advisory.TryGetProperty("severity", out var sev) && sev.ValueKind == JsonValueKind.String
+                                    ? sev.GetString() ?? "Unknown"
+                                    : "Unknown";
+                                var url = advisory.TryGetProperty("url", out var u) && u.ValueKind == JsonValueKind.String
+                                    ? u.GetString()
+                                    : null;
+                                var title = advisory.TryGetProperty("title", out var t) && t.ValueKind == JsonValueKind.String
+                                    ? t.GetString()
+                                    : null;
+
+                                var desc = !string.IsNullOrWhiteSpace(title) ? $"{severity}: {title}" : severity;
+                                if (!string.IsNullOrWhiteSpace(url))
+                                    desc += $" ({url})";
+                                matchingAdvisories.Add(desc);
+                            }
                         }
                     }
-                }
 
-                if (matchingAdvisories.Count > 0)
-                    result[version] = string.Join("; ", matchingAdvisories);
+                    if (matchingAdvisories.Count > 0)
+                        result[(packageName, version)] = string.Join("; ", matchingAdvisories);
+                }
             }
 
             return result;
