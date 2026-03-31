@@ -33,6 +33,8 @@ public static class HtmlReportGenerator
         streamWriter.WriteLine("        .different { font-weight: bold; }");
         streamWriter.WriteLine("        .deprecated { color: #b08800; }");
         streamWriter.WriteLine("        .vulnerable { color: #d73a49; }");
+        streamWriter.WriteLine("        .icon-deprecated { cursor: help; font-size: 1.2em; }");
+        streamWriter.WriteLine("        .icon-vulnerable { cursor: help; font-size: 1.2em; }");
         streamWriter.WriteLine("    </style>");
         streamWriter.WriteLine("</head>");
         streamWriter.WriteLine("<body>");
@@ -67,15 +69,15 @@ public static class HtmlReportGenerator
 
             var licenseHtml = FormatLicenseHtml(package.License);
             var publishedDateHtml = System.Net.WebUtility.HtmlEncode(package.PublishedDate ?? "N/A");
-            var deprecatedHtml = System.Net.WebUtility.HtmlEncode(package.Deprecated ?? "");
-            var vulnerabilitiesHtml = System.Net.WebUtility.HtmlEncode(package.Vulnerabilities ?? "");
+            var deprecatedHtml = FormatDeprecatedHtml(package.Deprecated);
+            var vulnerabilitiesHtml = FormatVulnerabilitiesHtml(package.Vulnerabilities);
             var latestVersionHtml = package.LatestUrl != null
                 ? $"<a href=\"{package.LatestUrl}\" target=\"_blank\">{System.Net.WebUtility.HtmlEncode(package.LatestVersion ?? "N/A")}</a>"
                 : System.Net.WebUtility.HtmlEncode(package.LatestVersion ?? "N/A");
             var latestLicenseHtml = FormatLicenseHtml(package.LatestLicense);
             var latestPublishedDateHtml = System.Net.WebUtility.HtmlEncode(package.LatestPublishedDate ?? "N/A");
-            var latestDeprecatedHtml = System.Net.WebUtility.HtmlEncode(package.LatestDeprecated ?? "");
-            var latestVulnerabilitiesHtml = System.Net.WebUtility.HtmlEncode(package.LatestVulnerabilities ?? "");
+            var latestDeprecatedHtml = FormatDeprecatedHtml(package.LatestDeprecated);
+            var latestVulnerabilitiesHtml = FormatVulnerabilitiesHtml(package.LatestVulnerabilities);
 
             var versionDiffers = !string.Equals(package.ResolvedVersion, package.LatestVersion, StringComparison.OrdinalIgnoreCase);
             var licenseDiffers = !string.Equals(package.License, package.LatestLicense, StringComparison.OrdinalIgnoreCase);
@@ -123,5 +125,23 @@ public static class HtmlReportGenerator
         }
 
         return System.Net.WebUtility.HtmlEncode(license);
+    }
+
+    private static string FormatDeprecatedHtml(string? deprecated)
+    {
+        if (string.IsNullOrWhiteSpace(deprecated))
+            return "";
+
+        var encoded = System.Net.WebUtility.HtmlEncode(deprecated);
+        return $"<span class=\"icon-deprecated\" title=\"{encoded}\">&#9888;&#65039;</span>";
+    }
+
+    private static string FormatVulnerabilitiesHtml(string? vulnerabilities)
+    {
+        if (string.IsNullOrWhiteSpace(vulnerabilities))
+            return "";
+
+        var encoded = System.Net.WebUtility.HtmlEncode(vulnerabilities);
+        return $"<span class=\"icon-vulnerable\" title=\"{encoded}\">&#128680;</span>";
     }
 }

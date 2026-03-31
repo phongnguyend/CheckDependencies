@@ -176,6 +176,8 @@ public class HtmlReportGeneratorTests : IDisposable
         Assert.Contains(".different", html);
         Assert.Contains(".deprecated", html);
         Assert.Contains(".vulnerable", html);
+        Assert.Contains(".icon-deprecated", html);
+        Assert.Contains(".icon-vulnerable", html);
     }
 
     [Fact]
@@ -283,6 +285,99 @@ public class HtmlReportGeneratorTests : IDisposable
 
         Assert.Contains("<td class=\"version\">^1.0.0</td>", html);
         Assert.Contains("<a href=\"https://example.com\" target=\"_blank\">1.0.0</a>", html);
+    }
+
+    [Fact]
+    public void Generate_DeprecatedPackage_RendersWarningIconWithTooltip()
+    {
+        var packages = new List<PackageEntry>
+        {
+            new("old-package", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", "This package is deprecated", null, "1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null),
+        };
+
+        var html = GenerateAndRead("Test Report", packages, []);
+
+        Assert.Contains("<span class=\"icon-deprecated\" title=\"This package is deprecated\">&#9888;&#65039;</span>", html);
+    }
+
+    [Fact]
+    public void Generate_VulnerablePackage_RendersAlertIconWithTooltip()
+    {
+        var packages = new List<PackageEntry>
+        {
+            new("vuln-package", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, "CVE-2024-1234 High", "1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null),
+        };
+
+        var html = GenerateAndRead("Test Report", packages, []);
+
+        Assert.Contains("<span class=\"icon-vulnerable\" title=\"CVE-2024-1234 High\">&#128680;</span>", html);
+    }
+
+    [Fact]
+    public void Generate_NullDeprecated_RendersEmpty()
+    {
+        var packages = new List<PackageEntry>
+        {
+            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, null, "1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null),
+        };
+
+        var html = GenerateAndRead("Test Report", packages, []);
+
+        Assert.Contains("<td class=\"deprecated\"></td>", html);
+        Assert.DoesNotContain("&#9888;", html);
+    }
+
+    [Fact]
+    public void Generate_NullVulnerabilities_RendersEmpty()
+    {
+        var packages = new List<PackageEntry>
+        {
+            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, null, "1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null),
+        };
+
+        var html = GenerateAndRead("Test Report", packages, []);
+
+        Assert.Contains("<td class=\"vulnerable\"></td>", html);
+        Assert.DoesNotContain("&#128680;", html);
+    }
+
+    [Fact]
+    public void Generate_LatestDeprecated_RendersWarningIconWithTooltip()
+    {
+        var packages = new List<PackageEntry>
+        {
+            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, null, "2.0.0", "https://example.com/latest", "MIT", "2024-06-15", "Legacy package", null),
+        };
+
+        var html = GenerateAndRead("Test Report", packages, []);
+
+        Assert.Contains("<span class=\"icon-deprecated\" title=\"Legacy package\">&#9888;&#65039;</span>", html);
+    }
+
+    [Fact]
+    public void Generate_LatestVulnerabilities_RendersAlertIconWithTooltip()
+    {
+        var packages = new List<PackageEntry>
+        {
+            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, null, "2.0.0", "https://example.com/latest", "MIT", "2024-06-15", null, "CVE-2024-5678 Critical"),
+        };
+
+        var html = GenerateAndRead("Test Report", packages, []);
+
+        Assert.Contains("<span class=\"icon-vulnerable\" title=\"CVE-2024-5678 Critical\">&#128680;</span>", html);
+    }
+
+    [Fact]
+    public void Generate_DeprecatedWithSpecialChars_HtmlEncodesTooltip()
+    {
+        var packages = new List<PackageEntry>
+        {
+            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", "Use <new-package> instead", null, "1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null),
+        };
+
+        var html = GenerateAndRead("Test Report", packages, []);
+
+        Assert.Contains("title=\"Use &lt;new-package&gt; instead\"", html);
     }
 
     private static int CountOccurrences(string text, string pattern)
