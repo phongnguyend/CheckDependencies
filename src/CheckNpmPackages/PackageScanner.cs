@@ -32,10 +32,14 @@ public class PackageScanner
                     $"https://www.npmjs.com/package/{g.Key.Name}/v/{info?.ResolvedVersion}",
                     info?.License,
                     info?.PublishedDate,
+                    info?.Deprecated,
+                    info?.Vulnerabilities,
                     info?.LatestVersion,
                     info?.LatestVersion != null ? $"https://www.npmjs.com/package/{g.Key.Name}/v/{info.LatestVersion}" : null,
                     info?.LatestLicense,
-                    info?.LatestPublishedDate);
+                    info?.LatestPublishedDate,
+                    info?.LatestDeprecated,
+                    info?.LatestVulnerabilities);
             })
             .OrderBy(x => x.Name)
             .ThenBy(x => x.Version).ToList();

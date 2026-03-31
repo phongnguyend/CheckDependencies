@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace CheckNugetPackages;
 
-public record PackageInfo(string? ResolvedVersion, string? License, string? PublishedDate, string? LatestVersion, string? LatestLicense, string? LatestPublishedDate);
+public record PackageInfo(string? ResolvedVersion, string? License, string? PublishedDate, string? Deprecated, string? Vulnerabilities, string? LatestVersion, string? LatestLicense, string? LatestPublishedDate, string? LatestDeprecated, string? LatestVulnerabilities);
 
 public static class NugetPackageResolver
 {
@@ -57,17 +57,20 @@ public static class NugetPackageResolver
     private static async Task<PackageInfo> GetPackageInfoAsync(string packageName, string? version)
     {
         if (string.IsNullOrWhiteSpace(packageName))
-            return new PackageInfo(null, null, null, null, null, null);
+            return new PackageInfo(null, null, null, null, null, null, null, null, null, null);
 
         try
         {
             var registration = await GetRegistrationAsync(packageName);
             if (registration?.Items == null)
-                return new PackageInfo(null, null, null, null, null, null);
+                return new PackageInfo(null, null, null, null, null, null, null, null, null, null);
 
             string? license = null;
             string? publishedDate = null;
+            string? deprecated = null;
+            string? vulnerabilities = null;
             CatalogEntry? latestEntry = null;
+            RegistrationLeaf? latestLeaf = null;
 
             // Search through pages for the matching version and track the latest version
             foreach (var page in registration.Items)
@@ -86,6 +89,8 @@ public static class NugetPackageResolver
                     {
                         license = !string.IsNullOrEmpty(catalogEntry.LicenseExpression) ? catalogEntry.LicenseExpression : catalogEntry.LicenseUrl;
                         publishedDate = catalogEntry.Published?.ToString("yyyy-MM-dd");
+                        deprecated = FormatDeprecation(catalogEntry.Deprecation);
+                        vulnerabilities = FormatVulnerabilities(catalogEntry.Vulnerabilities);
                     }
 
                     // Track the latest (non-prerelease) version
@@ -94,6 +99,7 @@ public static class NugetPackageResolver
                         if (latestEntry == null || CompareVersions(catalogEntry.Version, latestEntry.Version) > 0)
                         {
                             latestEntry = catalogEntry;
+                            latestLeaf = item;
                         }
                     }
                 }
@@ -102,21 +108,56 @@ public static class NugetPackageResolver
             string? latestVersion = latestEntry?.Version;
             string? latestLicense = null;
             string? latestPublishedDate = null;
+            string? latestDeprecated = null;
+            string? latestVulnerabilities = null;
 
             if (latestEntry != null)
             {
                 latestLicense = !string.IsNullOrEmpty(latestEntry.LicenseExpression) ? latestEntry.LicenseExpression : latestEntry.LicenseUrl;
                 latestPublishedDate = latestEntry.Published?.ToString("yyyy-MM-dd");
+                latestDeprecated = FormatDeprecation(latestEntry.Deprecation);
+                latestVulnerabilities = FormatVulnerabilities(latestEntry.Vulnerabilities);
             }
 
-            return new PackageInfo(version, license, publishedDate, latestVersion, latestLicense, latestPublishedDate);
+            return new PackageInfo(version, license, publishedDate, deprecated, vulnerabilities, latestVersion, latestLicense, latestPublishedDate, latestDeprecated, latestVulnerabilities);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Warning: Failed to fetch license for {packageName} {version}: {ex.Message}");
         }
 
-        return new PackageInfo(null, null, null, null, null, null);
+        return new PackageInfo(null, null, null, null, null, null, null, null, null, null);
+    }
+
+    internal static string? FormatDeprecation(DeprecationInfo? deprecation)
+    {
+        if (deprecation == null)
+            return null;
+
+        var parts = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(deprecation.Message))
+            parts.Add(deprecation.Message);
+
+        if (deprecation.Reasons != null && deprecation.Reasons.Count > 0)
+            parts.Add(string.Join(", ", deprecation.Reasons));
+
+        return parts.Count > 0 ? string.Join(" - ", parts) : "Deprecated";
+    }
+
+    internal static string? FormatVulnerabilities(List<VulnerabilityInfo>? vulnerabilities)
+    {
+        if (vulnerabilities == null || vulnerabilities.Count == 0)
+            return null;
+
+        var descriptions = vulnerabilities.Select(v =>
+        {
+            var severity = v.Severity ?? "Unknown";
+            var advisoryUrl = v.AdvisoryUrl;
+            return !string.IsNullOrWhiteSpace(advisoryUrl) ? $"{severity} ({advisoryUrl})" : severity;
+        });
+
+        return string.Join("; ", descriptions);
     }
 
     private static Task<RegistrationIndex?> GetRegistrationAsync(string packageName)
@@ -224,5 +265,29 @@ public static class NugetPackageResolver
 
         [JsonPropertyName("listed")]
         public bool? Listed { get; set; }
+
+        [JsonPropertyName("deprecation")]
+        public DeprecationInfo? Deprecation { get; set; }
+
+        [JsonPropertyName("vulnerabilities")]
+        public List<VulnerabilityInfo>? Vulnerabilities { get; set; }
+    }
+
+    internal class DeprecationInfo
+    {
+        [JsonPropertyName("message")]
+        public string? Message { get; set; }
+
+        [JsonPropertyName("reasons")]
+        public List<string>? Reasons { get; set; }
+    }
+
+    internal class VulnerabilityInfo
+    {
+        [JsonPropertyName("advisoryUrl")]
+        public string? AdvisoryUrl { get; set; }
+
+        [JsonPropertyName("severity")]
+        public string? Severity { get; set; }
     }
 }

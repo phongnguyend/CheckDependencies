@@ -363,4 +363,51 @@ public class NpmPackageResolverTests
         }
         return result;
     }
+
+    [Fact]
+    public async Task GetLicensesAsync_DeprecatedPackage_ReturnsDeprecatedInfo()
+    {
+        // "request" is a well-known deprecated npm package
+        var packages = new List<(string Name, string Version)>
+        {
+            ("request", "2.88.2"),
+        };
+
+        var results = await NpmPackgeResolver.GetLicensesAsync(packages);
+
+        Assert.Single(results);
+        var info = results[("request", "2.88.2")];
+        Assert.NotNull(info.Deprecated);
+    }
+
+    [Fact]
+    public async Task GetLicensesAsync_NonDeprecatedPackage_ReturnsNullDeprecated()
+    {
+        var packages = new List<(string Name, string Version)>
+        {
+            ("lodash", "4.17.21"),
+        };
+
+        var results = await NpmPackgeResolver.GetLicensesAsync(packages);
+
+        Assert.Single(results);
+        var info = results[("lodash", "4.17.21")];
+        Assert.Null(info.Deprecated);
+    }
+
+    [Fact]
+    public async Task GetLicensesAsync_VulnerablePackage_ReturnsVulnerabilityInfo()
+    {
+        // lodash 4.17.20 has known vulnerabilities (prototype pollution)
+        var packages = new List<(string Name, string Version)>
+        {
+            ("lodash", "4.17.20"),
+        };
+
+        var results = await NpmPackgeResolver.GetLicensesAsync(packages);
+
+        Assert.Single(results);
+        var info = results[("lodash", "4.17.20")];
+        Assert.NotNull(info.Vulnerabilities);
+    }
 }

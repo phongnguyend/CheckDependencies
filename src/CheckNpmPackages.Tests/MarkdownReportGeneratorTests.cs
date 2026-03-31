@@ -41,8 +41,8 @@ public class MarkdownReportGeneratorTests : IDisposable
     public void Generate_ContainsTableHeaders()
     {
         var md = GenerateAndRead("Test Report", [], []);
-        Assert.Contains("| Name | Version | Resolved Version | License | Published Date | Latest Version | Latest License | Latest Published Date | Projects |", md);
-        Assert.Contains("| ---- | ------- | ---------------- | ------- | -------------- | -------------- | -------------- | --------------------- | -------- |", md);
+        Assert.Contains("| Name | Version | Resolved Version | License | Published Date | Deprecated | Vulnerabilities | Latest Version | Latest License | Latest Published Date | Latest Deprecated | Latest Vulnerabilities | Projects |", md);
+        Assert.Contains("| ---- | ------- | ---------------- | ------- | -------------- | ---------- | --------------- | -------------- | -------------- | --------------------- | ----------------- | ---------------------- | -------- |", md);
     }
 
     [Fact]
@@ -50,7 +50,7 @@ public class MarkdownReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("lodash", "4.17.21", "4.17.21", "my-app", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", "4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20"),
+            new("lodash", "4.17.21", "4.17.21", "my-app", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null, "4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null),
         };
 
         var md = GenerateAndRead("Test Report", packages, []);
@@ -67,8 +67,8 @@ public class MarkdownReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("@types/node", "20.0.0", "20.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", "20.1.0", "https://example.com/latest", "MIT", "2024-02-01"),
-            new("lodash", "4.17.21", "4.17.21", "my-app", "https://example.com", "MIT", "2021-02-20", "4.17.21", "https://example.com/latest", "MIT", "2021-02-20"),
+            new("@types/node", "20.0.0", "20.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, null, "20.1.0", "https://example.com/latest", "MIT", "2024-02-01", null, null),
+            new("lodash", "4.17.21", "4.17.21", "my-app", "https://example.com", "MIT", "2021-02-20", null, null, "4.17.21", "https://example.com/latest", "MIT", "2021-02-20", null, null),
         };
 
         var md = GenerateAndRead("Test Report", packages, ["@types/"]);
@@ -82,7 +82,7 @@ public class MarkdownReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", null, "2024-01-01", "1.0.0", null, null, null),
+            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", null, "2024-01-01", null, null, "1.0.0", null, null, null, null, null),
         };
 
         var md = GenerateAndRead("Test Report", packages, []);
@@ -95,7 +95,7 @@ public class MarkdownReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", null, "1.0.0", null, "MIT", null),
+            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", null, null, null, "1.0.0", null, "MIT", null, null, null),
         };
 
         var md = GenerateAndRead("Test Report", packages, []);
@@ -110,7 +110,7 @@ public class MarkdownReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", null, null, "my-app", "https://example.com", "MIT", "2024-01-01", "1.0.0", null, "MIT", "2024-01-01"),
+            new("some-pkg", null, null, "my-app", "https://example.com", "MIT", "2024-01-01", null, null, "1.0.0", null, "MIT", "2024-01-01", null, null),
         };
 
         var md = GenerateAndRead("Test Report", packages, []);
@@ -123,7 +123,7 @@ public class MarkdownReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "https://opensource.org/licenses/MIT", "2024-01-01", "1.0.0", null, "MIT", "2024-01-01"),
+            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "https://opensource.org/licenses/MIT", "2024-01-01", null, null, "1.0.0", null, "MIT", "2024-01-01", null, null),
         };
 
         var md = GenerateAndRead("Test Report", packages, []);
@@ -136,7 +136,7 @@ public class MarkdownReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("pkg|name", "1.0.0", "1.0.0", "project|a", "https://example.com", "MIT|BSD", "2024-01-01", "1.0.0", null, "MIT|BSD", "2024-01-01"),
+            new("pkg|name", "1.0.0", "1.0.0", "project|a", "https://example.com", "MIT|BSD", "2024-01-01", null, null, "1.0.0", null, "MIT|BSD", "2024-01-01", null, null),
         };
 
         var md = GenerateAndRead("Test Report", packages, []);
@@ -169,7 +169,7 @@ public class MarkdownReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("lodash", "4.17.20", "4.17.20", "my-app", "https://www.npmjs.com/package/lodash/v/4.17.20", "MIT", "2020-10-27", "4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20"),
+            new("lodash", "4.17.20", "4.17.20", "my-app", "https://www.npmjs.com/package/lodash/v/4.17.20", "MIT", "2020-10-27", null, null, "4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null),
         };
 
         var md = GenerateAndRead("Test Report", packages, []);

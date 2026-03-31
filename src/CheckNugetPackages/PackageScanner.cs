@@ -34,10 +34,14 @@ public class PackageScanner
                     $"https://www.nuget.org/packages/{g.Key.Name}/{info?.ResolvedVersion}",
                     info?.License,
                     info?.PublishedDate,
+                    info?.Deprecated,
+                    info?.Vulnerabilities,
                     info?.LatestVersion,
                     info?.LatestVersion != null ? $"https://www.nuget.org/packages/{g.Key.Name}/{info.LatestVersion}" : null,
                     info?.LatestLicense,
-                    info?.LatestPublishedDate);
+                    info?.LatestPublishedDate,
+                    info?.LatestDeprecated,
+                    info?.LatestVulnerabilities);
             })
             .OrderBy(x => x.Name)
             .ThenBy(x => x.Version).ToList();

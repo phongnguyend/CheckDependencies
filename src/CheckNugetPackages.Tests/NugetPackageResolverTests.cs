@@ -136,4 +136,70 @@ public class NugetPackageResolverTests
         var results = await NugetPackageResolver.GetLicensesAsync([]);
         Assert.Empty(results);
     }
+
+    [Fact]
+    public async Task GetLicensesAsync_DeprecatedPackage_ReturnsDeprecatedInfo()
+    {
+        // Microsoft.Azure.EventHubs is deprecated in favor of Azure.Messaging.EventHubs
+        var packages = new List<(string Name, string Version)>
+        {
+            ("Microsoft.Azure.EventHubs", "4.3.2"),
+        };
+
+        var results = await NugetPackageResolver.GetLicensesAsync(packages);
+
+        Assert.Single(results);
+        var info = results[("Microsoft.Azure.EventHubs", "4.3.2")];
+        Assert.NotNull(info.Deprecated);
+    }
+
+    [Fact]
+    public async Task GetLicensesAsync_VulnerablePackage_ReturnsVulnerabilityInfo()
+    {
+        // System.Text.RegularExpressions 4.3.0 has known vulnerabilities
+        var packages = new List<(string Name, string Version)>
+        {
+            ("System.Text.RegularExpressions", "4.3.0"),
+        };
+
+        var results = await NugetPackageResolver.GetLicensesAsync(packages);
+
+        Assert.Single(results);
+        var info = results[("System.Text.RegularExpressions", "4.3.0")];
+        Assert.NotNull(info.Vulnerabilities);
+    }
+
+    [Fact]
+    public async Task GetLicensesAsync_NonDeprecatedPackage_ReturnsNullDeprecated()
+    {
+        var packages = new List<(string Name, string Version)>
+        {
+            ("Newtonsoft.Json", "13.0.3"),
+        };
+
+        var results = await NugetPackageResolver.GetLicensesAsync(packages);
+
+        Assert.Single(results);
+        var info = results[("Newtonsoft.Json", "13.0.3")];
+        Assert.Null(info.Deprecated);
+        Assert.Null(info.Vulnerabilities);
+    }
+
+    [Fact]
+    public void FormatDeprecation_NullInput_ReturnsNull()
+    {
+        Assert.Null(NugetPackageResolver.FormatDeprecation(null));
+    }
+
+    [Fact]
+    public void FormatVulnerabilities_NullInput_ReturnsNull()
+    {
+        Assert.Null(NugetPackageResolver.FormatVulnerabilities(null));
+    }
+
+    [Fact]
+    public void FormatVulnerabilities_EmptyList_ReturnsNull()
+    {
+        Assert.Null(NugetPackageResolver.FormatVulnerabilities([]));
+    }
 }

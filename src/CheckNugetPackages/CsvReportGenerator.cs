@@ -21,12 +21,16 @@ public static class CsvReportGenerator
 
             var licenseValue = package.License ?? "";
             var publishedDateValue = package.PublishedDate ?? "";
+            var deprecatedValue = package.Deprecated ?? "";
+            var vulnerabilitiesValue = package.Vulnerabilities ?? "";
             var latestVersionValue = package.LatestVersion ?? "";
             var latestLicenseValue = package.LatestLicense ?? "";
             var latestPublishedDateValue = package.LatestPublishedDate ?? "";
+            var latestDeprecatedValue = package.LatestDeprecated ?? "";
+            var latestVulnerabilitiesValue = package.LatestVulnerabilities ?? "";
             var latestUrlValue = package.LatestUrl ?? "";
             var resolvedVersionValue = package.ResolvedVersion ?? "";
-            streamWriter.WriteLine($"{package.Name},{package.Version},\"{resolvedVersionValue}\",\"{licenseValue}\",\"{publishedDateValue}\",\"{latestVersionValue}\",\"{latestLicenseValue}\",\"{latestPublishedDateValue}\",\"{package.Url}\",\"{latestUrlValue}\",\"{package.Projects}\"");
+            streamWriter.WriteLine($"{package.Name},{package.Version},\"{resolvedVersionValue}\",\"{licenseValue}\",\"{publishedDateValue}\",\"{deprecatedValue}\",\"{vulnerabilitiesValue}\",\"{latestVersionValue}\",\"{latestLicenseValue}\",\"{latestPublishedDateValue}\",\"{latestDeprecatedValue}\",\"{latestVulnerabilitiesValue}\",\"{package.Url}\",\"{latestUrlValue}\",\"{package.Projects}\"");
         }
     }
 }

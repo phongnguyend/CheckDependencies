@@ -22,8 +22,8 @@ public class CsvReportGeneratorTests : IDisposable
         var filePath = Path.Combine(_tempDir, "packages.csv");
         var packages = new List<PackageEntry>
         {
-            new("Newtonsoft.Json", "13.0.3", "13.0.3", "ProjectA", "https://www.nuget.org/packages/Newtonsoft.Json/13.0.3", "MIT", "2023-03-08", "13.0.3", "https://www.nuget.org/packages/Newtonsoft.Json/13.0.3", "MIT", "2023-03-08"),
-            new("Serilog", "3.1.1", "3.1.1", "ProjectB", "https://www.nuget.org/packages/Serilog/3.1.1", "Apache-2.0", "2023-11-09", "4.0.0", "https://www.nuget.org/packages/Serilog/4.0.0", "Apache-2.0", "2024-06-01"),
+            new("Newtonsoft.Json", "13.0.3", "13.0.3", "ProjectA", "https://www.nuget.org/packages/Newtonsoft.Json/13.0.3", "MIT", "2023-03-08", null, null, "13.0.3", "https://www.nuget.org/packages/Newtonsoft.Json/13.0.3", "MIT", "2023-03-08", null, null),
+            new("Serilog", "3.1.1", "3.1.1", "ProjectB", "https://www.nuget.org/packages/Serilog/3.1.1", "Apache-2.0", "2023-11-09", null, null, "4.0.0", "https://www.nuget.org/packages/Serilog/4.0.0", "Apache-2.0", "2024-06-01", null, null),
         };
 
         CsvReportGenerator.Generate(filePath, packages, []);
@@ -44,8 +44,8 @@ public class CsvReportGeneratorTests : IDisposable
         var filePath = Path.Combine(_tempDir, "packages.csv");
         var packages = new List<PackageEntry>
         {
-            new("System.Text.Json", "8.0.0", "8.0.0", "ProjectA", "https://www.nuget.org/packages/System.Text.Json/8.0.0", "MIT", "2023-11-14", "8.0.0", "https://www.nuget.org/packages/System.Text.Json/8.0.0", "MIT", "2023-11-14"),
-            new("Newtonsoft.Json", "13.0.3", "13.0.3", "ProjectA", "https://www.nuget.org/packages/Newtonsoft.Json/13.0.3", "MIT", "2023-03-08", "13.0.3", "https://www.nuget.org/packages/Newtonsoft.Json/13.0.3", "MIT", "2023-03-08"),
+            new("System.Text.Json", "8.0.0", "8.0.0", "ProjectA", "https://www.nuget.org/packages/System.Text.Json/8.0.0", "MIT", "2023-11-14", null, null, "8.0.0", "https://www.nuget.org/packages/System.Text.Json/8.0.0", "MIT", "2023-11-14", null, null),
+            new("Newtonsoft.Json", "13.0.3", "13.0.3", "ProjectA", "https://www.nuget.org/packages/Newtonsoft.Json/13.0.3", "MIT", "2023-03-08", null, null, "13.0.3", "https://www.nuget.org/packages/Newtonsoft.Json/13.0.3", "MIT", "2023-03-08", null, null),
         };
 
         CsvReportGenerator.Generate(filePath, packages, ["System."]);
@@ -61,7 +61,7 @@ public class CsvReportGeneratorTests : IDisposable
         var filePath = Path.Combine(_tempDir, "packages.csv");
         var packages = new List<PackageEntry>
         {
-            new("SomePackage", "1.0.0", "1.0.0", "ProjectA", "https://www.nuget.org/packages/SomePackage/1.0.0", null, null, null, null, null, null),
+            new("SomePackage", "1.0.0", "1.0.0", "ProjectA", "https://www.nuget.org/packages/SomePackage/1.0.0", null, null, null, null, null, null, null, null, null, null),
         };
 
         CsvReportGenerator.Generate(filePath, packages, []);
@@ -98,12 +98,12 @@ public class CsvReportGeneratorTests : IDisposable
         var filePath = Path.Combine(_tempDir, "packages.csv");
         var packages = new List<PackageEntry>
         {
-            new("TestPkg", "2.0.0", "2.0.0", "ProjX", "https://example.com", "Apache-2.0", "2024-01-15", "3.0.0", "https://example.com/latest", "Apache-2.0", "2024-06-01"),
+            new("TestPkg", "2.0.0", "2.0.0", "ProjX", "https://example.com", "Apache-2.0", "2024-01-15", null, null, "3.0.0", "https://example.com/latest", "Apache-2.0", "2024-06-01", null, null),
         };
 
         CsvReportGenerator.Generate(filePath, packages, []);
 
         var line = File.ReadAllLines(filePath)[0];
-        Assert.Equal("TestPkg,2.0.0,\"2.0.0\",\"Apache-2.0\",\"2024-01-15\",\"3.0.0\",\"Apache-2.0\",\"2024-06-01\",\"https://example.com\",\"https://example.com/latest\",\"ProjX\"", line);
+        Assert.Equal("TestPkg,2.0.0,\"2.0.0\",\"Apache-2.0\",\"2024-01-15\",\"\",\"\",\"3.0.0\",\"Apache-2.0\",\"2024-06-01\",\"\",\"\",\"https://example.com\",\"https://example.com/latest\",\"ProjX\"", line);
     }
 }

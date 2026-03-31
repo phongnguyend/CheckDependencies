@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 
 namespace CheckNpmPackages;
 
-public record PackageInfo(string? ResolvedVersion, string? License, string? PublishedDate, string? LatestVersion, string? LatestLicense, string? LatestPublishedDate);
+public record PackageInfo(string? ResolvedVersion, string? License, string? PublishedDate, string? Deprecated, string? Vulnerabilities, string? LatestVersion, string? LatestLicense, string? LatestPublishedDate, string? LatestDeprecated, string? LatestVulnerabilities);
 
 public static class NpmPackgeResolver
 {
@@ -19,6 +19,7 @@ public static class NpmPackgeResolver
     };
 
     private const string RegistryBaseUrl = "https://registry.npmjs.org";
+    private const string AuditBaseUrl = "https://registry.npmjs.org/-/npm/v1/security/advisories/bulk";
 
     private static readonly ConcurrentDictionary<string, Task<JsonElement?>> PackageDocCache = new(StringComparer.OrdinalIgnoreCase);
 
@@ -65,13 +66,13 @@ public static class NpmPackgeResolver
     private static async Task<PackageInfo> GetPackageInfoAsync(string packageName, string? version, string? resolvedVersionHint = null)
     {
         if (string.IsNullOrWhiteSpace(packageName))
-            return new PackageInfo(null, null, null, null, null, null);
+            return new PackageInfo(null, null, null, null, null, null, null, null, null, null);
 
         try
         {
             var doc = await GetPackageDocAsync(packageName);
             if (doc == null)
-                return new PackageInfo(null, null, null, null, null, null);
+                return new PackageInfo(null, null, null, null, null, null, null, null, null, null);
 
             var docValue = doc.Value;
 
@@ -114,8 +115,9 @@ public static class NpmPackgeResolver
                 resolvedVersion = latestVersion;
             }
 
-            // Extract license from the specific version
+            // Extract license and deprecated from the specific version
             string? license = null;
+            string? deprecated = null;
             if (!string.IsNullOrWhiteSpace(resolvedVersion) &&
                 docValue.TryGetProperty("versions", out var versionsForResolved) &&
                 versionsForResolved.TryGetProperty(resolvedVersion, out var versionDoc))
@@ -124,6 +126,8 @@ public static class NpmPackgeResolver
                 {
                     license = licenseProp.GetString();
                 }
+
+                deprecated = ExtractDeprecated(versionDoc);
             }
 
             // Extract published date from the "time" object
@@ -139,9 +143,10 @@ public static class NpmPackgeResolver
                 }
             }
 
-            // Extract latest version license and published date
+            // Extract latest version license, deprecated, and published date
             string? latestLicense = null;
             string? latestPublishedDate = null;
+            string? latestDeprecated = null;
             if (!string.IsNullOrWhiteSpace(latestVersion) &&
                 docValue.TryGetProperty("versions", out var versionsForLatest) &&
                 versionsForLatest.TryGetProperty(latestVersion, out var latestDoc))
@@ -150,6 +155,8 @@ public static class NpmPackgeResolver
                 {
                     latestLicense = latestLicenseProp.GetString();
                 }
+
+                latestDeprecated = ExtractDeprecated(latestDoc);
             }
 
             if (!string.IsNullOrWhiteSpace(latestVersion) &&
@@ -163,20 +170,131 @@ public static class NpmPackgeResolver
                 }
             }
 
+            // Fetch vulnerability info via bulk audit API
+            string? vulnerabilities = null;
+            string? latestVulnerabilities = null;
+            var vulnMap = await FetchVulnerabilitiesAsync(packageName, resolvedVersion, latestVersion);
+            if (vulnMap != null)
+            {
+                if (!string.IsNullOrWhiteSpace(resolvedVersion) && vulnMap.TryGetValue(resolvedVersion, out var rv))
+                    vulnerabilities = rv;
+                if (!string.IsNullOrWhiteSpace(latestVersion) && vulnMap.TryGetValue(latestVersion, out var lv))
+                    latestVulnerabilities = lv;
+            }
+
             return new PackageInfo(
                 !string.IsNullOrEmpty(resolvedVersion) ? resolvedVersion : null,
                 !string.IsNullOrEmpty(license) ? license : null,
                 publishedDate,
+                deprecated,
+                vulnerabilities,
                 latestVersion,
                 !string.IsNullOrEmpty(latestLicense) ? latestLicense : null,
-                latestPublishedDate);
+                latestPublishedDate,
+                latestDeprecated,
+                latestVulnerabilities);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Warning: Failed to fetch license for {packageName} {version}: {ex.Message}");
         }
 
-        return new PackageInfo(null, null, null, null, null, null);
+        return new PackageInfo(null, null, null, null, null, null, null, null, null, null);
+    }
+
+    private static string? ExtractDeprecated(JsonElement versionDoc)
+    {
+        if (versionDoc.TryGetProperty("deprecated", out var depProp))
+        {
+            if (depProp.ValueKind == JsonValueKind.String)
+            {
+                var value = depProp.GetString();
+                return !string.IsNullOrWhiteSpace(value) ? value : null;
+            }
+            if (depProp.ValueKind == JsonValueKind.True)
+            {
+                return "Deprecated";
+            }
+        }
+
+        return null;
+    }
+
+    private static async Task<Dictionary<string, string>?> FetchVulnerabilitiesAsync(string packageName, string? resolvedVersion, string? latestVersion)
+    {
+        try
+        {
+            var versions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrWhiteSpace(resolvedVersion))
+                versions.Add(resolvedVersion);
+            if (!string.IsNullOrWhiteSpace(latestVersion))
+                versions.Add(latestVersion);
+
+            if (versions.Count == 0)
+                return null;
+
+            // POST to the bulk audit endpoint
+            var payload = new Dictionary<string, List<string>>
+            {
+                [packageName] = [.. versions]
+            };
+
+            var response = await HttpClient.PostAsJsonAsync(AuditBaseUrl, payload);
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var doc = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+            if (doc.ValueKind != JsonValueKind.Object)
+                return null;
+
+            // The response is: { "<packageName>": [ { "severity": "...", "url": "...", "vulnerable_versions": "..." }, ... ] }
+            if (!doc.TryGetProperty(packageName, out var advisories) || advisories.ValueKind != JsonValueKind.Array)
+                return result;
+
+            foreach (var version in versions)
+            {
+                var matchingAdvisories = new List<string>();
+                foreach (var advisory in advisories.EnumerateArray())
+                {
+                    var vulnerableVersions = advisory.TryGetProperty("vulnerable_versions", out var vv) && vv.ValueKind == JsonValueKind.String
+                        ? vv.GetString()
+                        : null;
+
+                    if (!string.IsNullOrWhiteSpace(vulnerableVersions) && SemVer.TryParse(version, out var sv))
+                    {
+                        var comparatorSets = ParseRange(vulnerableVersions);
+                        if (comparatorSets.Count > 0 && SatisfiesRange(sv, comparatorSets))
+                        {
+                            var severity = advisory.TryGetProperty("severity", out var sev) && sev.ValueKind == JsonValueKind.String
+                                ? sev.GetString() ?? "Unknown"
+                                : "Unknown";
+                            var url = advisory.TryGetProperty("url", out var u) && u.ValueKind == JsonValueKind.String
+                                ? u.GetString()
+                                : null;
+                            var title = advisory.TryGetProperty("title", out var t) && t.ValueKind == JsonValueKind.String
+                                ? t.GetString()
+                                : null;
+
+                            var desc = !string.IsNullOrWhiteSpace(title) ? $"{severity}: {title}" : severity;
+                            if (!string.IsNullOrWhiteSpace(url))
+                                desc += $" ({url})";
+                            matchingAdvisories.Add(desc);
+                        }
+                    }
+                }
+
+                if (matchingAdvisories.Count > 0)
+                    result[version] = string.Join("; ", matchingAdvisories);
+            }
+
+            return result;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static Task<JsonElement?> GetPackageDocAsync(string packageName)
@@ -477,7 +595,7 @@ public static class NpmPackgeResolver
         ];
     }
 
-    private static bool SatisfiesRange(SemVer version, List<List<Comparator>> comparatorSets)
+    internal static bool SatisfiesRange(SemVer version, List<List<Comparator>> comparatorSets)
     {
         // A version satisfies the range if it satisfies ANY of the comparator sets (OR logic)
         foreach (var set in comparatorSets)

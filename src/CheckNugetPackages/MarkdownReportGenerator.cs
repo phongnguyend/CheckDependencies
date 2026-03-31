@@ -16,8 +16,8 @@ public static class MarkdownReportGenerator
         streamWriter.WriteLine();
         streamWriter.WriteLine($"Generated on: {DateTime.Now:yyyy-MM-dd HH:mm:ss zzz}");
         streamWriter.WriteLine();
-        streamWriter.WriteLine("| Name | Version | Resolved Version | License | Published Date | Latest Version | Latest License | Latest Published Date | Projects |");
-        streamWriter.WriteLine("| ---- | ------- | ---------------- | ------- | -------------- | -------------- | -------------- | --------------------- | -------- |");
+        streamWriter.WriteLine("| Name | Version | Resolved Version | License | Published Date | Deprecated | Vulnerabilities | Latest Version | Latest License | Latest Published Date | Latest Deprecated | Latest Vulnerabilities | Projects |");
+        streamWriter.WriteLine("| ---- | ------- | ---------------- | ------- | -------------- | ---------- | --------------- | -------------- | -------------- | --------------------- | ----------------- | ---------------------- | -------- |");
 
         foreach (var package in packages)
         {
@@ -30,13 +30,17 @@ public static class MarkdownReportGenerator
             var versionMd = EscapeMarkdown(package.Version ?? "N/A");
             var resolvedVersionMd = $"[{EscapeMarkdown(package.ResolvedVersion ?? "N/A")}]({package.Url})";
             var publishedDateMd = EscapeMarkdown(package.PublishedDate ?? "N/A");
+            var deprecatedMd = EscapeMarkdown(package.Deprecated ?? "");
+            var vulnerabilitiesMd = EscapeMarkdown(package.Vulnerabilities ?? "");
             var latestVersionMd = package.LatestUrl != null
                 ? $"[{EscapeMarkdown(package.LatestVersion ?? "N/A")}]({package.LatestUrl})"
                 : EscapeMarkdown(package.LatestVersion ?? "N/A");
             var latestLicenseMd = FormatLicenseMarkdown(package.LatestLicense);
             var latestPublishedDateMd = EscapeMarkdown(package.LatestPublishedDate ?? "N/A");
+            var latestDeprecatedMd = EscapeMarkdown(package.LatestDeprecated ?? "");
+            var latestVulnerabilitiesMd = EscapeMarkdown(package.LatestVulnerabilities ?? "");
 
-            streamWriter.WriteLine($"| {EscapeMarkdown(package.Name)} | {versionMd} | {resolvedVersionMd} | {licenseMd} | {publishedDateMd} | {latestVersionMd} | {latestLicenseMd} | {latestPublishedDateMd} | {EscapeMarkdown(package.Projects)} |");
+            streamWriter.WriteLine($"| {EscapeMarkdown(package.Name)} | {versionMd} | {resolvedVersionMd} | {licenseMd} | {publishedDateMd} | {deprecatedMd} | {vulnerabilitiesMd} | {latestVersionMd} | {latestLicenseMd} | {latestPublishedDateMd} | {latestDeprecatedMd} | {latestVulnerabilitiesMd} | {EscapeMarkdown(package.Projects)} |");
         }
     }
 
