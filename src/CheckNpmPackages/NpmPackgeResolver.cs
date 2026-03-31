@@ -25,8 +25,15 @@ public static class NpmPackgeResolver
     public static async Task<Dictionary<(string Name, string Version), PackageInfo>> GetLicensesAsync(
         IEnumerable<(string Name, string Version)> packages)
     {
+        var result = await GetLicensesAsync(packages.Select(p => (p.Name, p.Version, (string?)null)));
+        return result.ToDictionary(kvp => (kvp.Key.Name, kvp.Key.Version), kvp => kvp.Value);
+    }
+
+    public static async Task<Dictionary<(string Name, string Version, string? ResolvedVersion), PackageInfo>> GetLicensesAsync(
+        IEnumerable<(string Name, string Version, string? ResolvedVersion)> packages)
+    {
         var distinct = packages.Distinct().ToList();
-        var results = new Dictionary<(string Name, string Version), PackageInfo>();
+        var results = new Dictionary<(string Name, string Version, string? ResolvedVersion), PackageInfo>();
 
         if (distinct.Count == 0)
             return results;
@@ -38,10 +45,10 @@ public static class NpmPackgeResolver
             await semaphore.WaitAsync();
             try
             {
-                var info = await GetPackageInfoAsync(package.Name, package.Version);
+                var info = await GetPackageInfoAsync(package.Name, package.Version, package.ResolvedVersion);
                 lock (results)
                 {
-                    results[package] = info;
+                    results[(package.Name, package.Version, package.ResolvedVersion)] = info;
                 }
             }
             finally
@@ -55,7 +62,7 @@ public static class NpmPackgeResolver
         return results;
     }
 
-    private static async Task<PackageInfo> GetPackageInfoAsync(string packageName, string? version)
+    private static async Task<PackageInfo> GetPackageInfoAsync(string packageName, string? version, string? resolvedVersionHint = null)
     {
         if (string.IsNullOrWhiteSpace(packageName))
             return new PackageInfo(null, null, null, null, null, null);
@@ -77,21 +84,31 @@ public static class NpmPackgeResolver
                 latestVersion = latestProp.GetString();
             }
 
-            // Collect all available versions
-            var availableVersions = new List<SemVer>();
-            if (docValue.TryGetProperty("versions", out var versionsProp))
+            // Use the resolved version hint from package-lock.json if available
+            string? resolvedVersion = null;
+            if (!string.IsNullOrWhiteSpace(resolvedVersionHint))
             {
-                foreach (var prop in versionsProp.EnumerateObject())
+                resolvedVersion = resolvedVersionHint;
+            }
+            else
+            {
+                // Collect all available versions
+                var availableVersions = new List<SemVer>();
+                if (docValue.TryGetProperty("versions", out var versionsProp))
                 {
-                    if (SemVer.TryParse(prop.Name, out var sv))
+                    foreach (var prop in versionsProp.EnumerateObject())
                     {
-                        availableVersions.Add(sv);
+                        if (SemVer.TryParse(prop.Name, out var sv))
+                        {
+                            availableVersions.Add(sv);
+                        }
                     }
                 }
+
+                // Resolve the version range to an actual version like npm install does
+                resolvedVersion = ResolveVersion(version, availableVersions, distTags);
             }
 
-            // Resolve the version range to an actual version like npm install does
-            var resolvedVersion = ResolveVersion(version, availableVersions, distTags);
             if (string.IsNullOrWhiteSpace(resolvedVersion))
             {
                 resolvedVersion = latestVersion;

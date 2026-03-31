@@ -117,7 +117,8 @@ public class NpmPackageResolverTests
     [Fact]
     public async Task GetLicensesAsync_EmptyInput_ReturnsEmptyDictionary()
     {
-        var results = await NpmPackgeResolver.GetLicensesAsync([]);
+        var packages = new List<(string Name, string Version)>();
+        var results = await NpmPackgeResolver.GetLicensesAsync(packages);
         Assert.Empty(results);
     }
 

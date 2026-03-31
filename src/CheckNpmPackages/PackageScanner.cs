@@ -6,7 +6,7 @@ public class PackageScanner
 {
     public static async Task RunAsync(ParsedArguments arguments)
     {
-        var packages = new List<(string Name, string Version, string Project)>();
+        var packages = new List<(string Name, string Version, string? ResolvedVersion, string Project)>();
 
         foreach (var directory in arguments.Directories)
         {
@@ -17,13 +17,13 @@ public class PackageScanner
         // Fetch license information from npm registry
         Console.WriteLine("Fetching license information from npm registry...");
         var packageInfoMap = await NpmPackgeResolver.GetLicensesAsync(
-            packages.Select(p => (p.Name, p.Version)).Distinct());
+            packages.Select(p => (p.Name, p.Version, p.ResolvedVersion)).Distinct());
         Console.WriteLine("License information fetched.");
 
-        var packageGroups = packages.GroupBy(x => new { x.Name, x.Version })
+        var packageGroups = packages.GroupBy(x => new { x.Name, x.Version, x.ResolvedVersion })
             .Select(g =>
             {
-                var info = packageInfoMap.TryGetValue((g.Key.Name, g.Key.Version), out var pi) ? pi : null;
+                var info = packageInfoMap.TryGetValue((g.Key.Name, g.Key.Version, g.Key.ResolvedVersion), out var pi) ? pi : null;
                 return new PackageEntry(
                     g.Key.Name,
                     g.Key.Version,
@@ -74,10 +74,10 @@ public class PackageScanner
             MarkdownReportGenerator.Generate(mdPath, "npm Packages Report", packageGroups, ignoredPackages);
         }
 
-        static List<(string Name, string Version, string Project)> ScanPackagesInPackageJsonFiles(string directory)
+        static List<(string Name, string Version, string? ResolvedVersion, string Project)> ScanPackagesInPackageJsonFiles(string directory)
         {
             var files = Directory.EnumerateFiles(directory, "package.json", SearchOption.AllDirectories);
-            var packages = new List<(string Name, string Version, string Project)>();
+            var packages = new List<(string Name, string Version, string? ResolvedVersion, string Project)>();
 
             foreach (var file in files)
             {
@@ -89,6 +89,10 @@ public class PackageScanner
                 var package = GetPackage(file);
                 var projectName = new DirectoryInfo(Path.GetDirectoryName(file)!).Name;
 
+                // Try to load package-lock.json from the same directory for resolved versions
+                var lockFilePath = Path.Combine(Path.GetDirectoryName(file)!, "package-lock.json");
+                var lockedVersions = GetLockedVersions(lockFilePath);
+
                 if (package?.Dependencies != null)
                 {
                     foreach (var node in package.Dependencies)
@@ -96,7 +100,8 @@ public class PackageScanner
                         if (node.Value.StartsWith("file:"))
                             continue;
 
-                        packages.Add((node.Key, node.Value, projectName));
+                        lockedVersions.TryGetValue(node.Key, out var resolvedVersion);
+                        packages.Add((node.Key, node.Value, resolvedVersion, projectName));
                     }
                 }
 
@@ -107,12 +112,83 @@ public class PackageScanner
                         if (node.Value.StartsWith("file:"))
                             continue;
 
-                        packages.Add((node.Key, node.Value, projectName));
+                        lockedVersions.TryGetValue(node.Key, out var resolvedVersion);
+                        packages.Add((node.Key, node.Value, resolvedVersion, projectName));
                     }
                 }
             }
 
             return packages;
+        }
+
+        static Dictionary<string, string> GetLockedVersions(string lockFilePath)
+        {
+            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            if (!File.Exists(lockFilePath))
+                return result;
+
+            try
+            {
+                var lockFileContent = File.ReadAllText(lockFilePath);
+                using var doc = JsonDocument.Parse(lockFileContent);
+                var root = doc.RootElement;
+
+                // lockfileVersion 2 and 3 use "packages" with "node_modules/<name>" keys
+                if (root.TryGetProperty("packages", out var packages))
+                {
+                    foreach (var entry in packages.EnumerateObject())
+                    {
+                        // Skip the root package (empty key "")
+                        if (string.IsNullOrEmpty(entry.Name))
+                            continue;
+
+                        // Keys are like "node_modules/lodash" or "node_modules/@scope/name"
+                        var lastNodeModules = entry.Name.LastIndexOf("node_modules/", StringComparison.Ordinal);
+                        if (lastNodeModules < 0)
+                            continue;
+
+                        var packageName = entry.Name[(lastNodeModules + "node_modules/".Length)..];
+
+                        // Only take top-level dependencies (node_modules/<name>, not nested)
+                        if (entry.Name.IndexOf("node_modules/", StringComparison.Ordinal) != lastNodeModules)
+                            continue;
+
+                        if (entry.Value.TryGetProperty("version", out var versionProp) &&
+                            versionProp.ValueKind == JsonValueKind.String)
+                        {
+                            var version = versionProp.GetString();
+                            if (!string.IsNullOrWhiteSpace(version))
+                            {
+                                result.TryAdd(packageName, version);
+                            }
+                        }
+                    }
+                }
+
+                // lockfileVersion 1 uses "dependencies" with direct package name keys
+                if (result.Count == 0 && root.TryGetProperty("dependencies", out var dependencies))
+                {
+                    foreach (var entry in dependencies.EnumerateObject())
+                    {
+                        if (entry.Value.TryGetProperty("version", out var versionProp) &&
+                            versionProp.ValueKind == JsonValueKind.String)
+                        {
+                            var version = versionProp.GetString();
+                            if (!string.IsNullOrWhiteSpace(version))
+                            {
+                                result.TryAdd(entry.Name, version);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                Console.WriteLine($"Warning: Failed to parse {lockFilePath}");
+            }
+
+            return result;
         }
 
         static PackageJson? GetPackage(string file)
