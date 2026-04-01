@@ -49,19 +49,16 @@ public class HtmlReportGeneratorTests : IDisposable
     public void Generate_ContainsTableHeaders()
     {
         var html = GenerateAndRead("Test Report", [], []);
-        Assert.Contains("<th>Name</th>", html);
+        Assert.Contains("<th rowspan=\"2\">Name</th>", html);
+        Assert.Contains("<th rowspan=\"2\">Version</th>", html);
+        Assert.Contains("<th colspan=\"5\">Current Resolved Version</th>", html);
+        Assert.Contains("<th colspan=\"5\">Latest Version</th>", html);
+        Assert.Contains("<th rowspan=\"2\">Projects</th>", html);
         Assert.Contains("<th>Version</th>", html);
-        Assert.Contains("<th>Resolved Version</th>", html);
         Assert.Contains("<th>License</th>", html);
         Assert.Contains("<th>Published Date</th>", html);
         Assert.Contains("<th>Deprecated</th>", html);
-        Assert.Contains("<th>Vulnerabilities</th>", html);
-        Assert.Contains("<th>Latest Version</th>", html);
-        Assert.Contains("<th>Latest License</th>", html);
-        Assert.Contains("<th>Latest Published Date</th>", html);
-        Assert.Contains("<th>Latest Deprecated</th>", html);
-        Assert.Contains("<th>Latest Vulnerabilities</th>", html);
-        Assert.Contains("<th>Projects</th>", html);
+        Assert.Contains("<th>Vulnerable</th>", html);
     }
 
     [Fact]
@@ -178,6 +175,8 @@ public class HtmlReportGeneratorTests : IDisposable
         Assert.Contains(".vulnerable", html);
         Assert.Contains(".icon-deprecated", html);
         Assert.Contains(".icon-vulnerable", html);
+        Assert.Contains(".version-deprecated", html);
+        Assert.Contains(".version-vulnerable", html);
     }
 
     [Fact]
@@ -378,6 +377,102 @@ public class HtmlReportGeneratorTests : IDisposable
         var html = GenerateAndRead("Test Report", packages, []);
 
         Assert.Contains("title=\"Use &lt;new-package&gt; instead\"", html);
+    }
+
+    [Fact]
+    public void Generate_DeprecatedPackage_RowHasOrangeBackground()
+    {
+        var packages = new List<PackageEntry>
+        {
+            new("old-package", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", "This package is deprecated", null, "1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null),
+        };
+
+        var html = GenerateAndRead("Test Report", packages, []);
+
+        Assert.Contains("<td class=\"version version-deprecated\">", html);
+        Assert.DoesNotContain("<td class=\"version version-vulnerable\">", html);
+    }
+
+    [Fact]
+    public void Generate_VulnerablePackage_RowHasRedBackground()
+    {
+        var packages = new List<PackageEntry>
+        {
+            new("vuln-package", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, "CVE-2024-1234 High", "1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null),
+        };
+
+        var html = GenerateAndRead("Test Report", packages, []);
+
+        Assert.Contains("<td class=\"version version-vulnerable\">", html);
+        Assert.DoesNotContain("<td class=\"version version-deprecated\">", html);
+    }
+
+    [Fact]
+    public void Generate_DeprecatedAndVulnerablePackage_RowHasRedBackground()
+    {
+        var packages = new List<PackageEntry>
+        {
+            new("bad-package", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", "Deprecated", "CVE-2024-1234 High", "1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null),
+        };
+
+        var html = GenerateAndRead("Test Report", packages, []);
+
+        Assert.Contains("<td class=\"version version-vulnerable\">", html);
+        Assert.DoesNotContain("<td class=\"version version-deprecated\">", html);
+    }
+
+    [Fact]
+    public void Generate_LatestDeprecatedOnly_RowHasOrangeBackground()
+    {
+        var packages = new List<PackageEntry>
+        {
+            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, null, "2.0.0", "https://example.com/latest", "MIT", "2024-06-15", "Legacy package", null),
+        };
+
+        var html = GenerateAndRead("Test Report", packages, []);
+
+        Assert.Contains("<td class=\"version version-deprecated\">", html);
+    }
+
+    [Fact]
+    public void Generate_LatestVulnerableOnly_RowHasRedBackground()
+    {
+        var packages = new List<PackageEntry>
+        {
+            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, null, "2.0.0", "https://example.com/latest", "MIT", "2024-06-15", null, "CVE-2024-5678 Critical"),
+        };
+
+        var html = GenerateAndRead("Test Report", packages, []);
+
+        Assert.Contains("<td class=\"version version-vulnerable\">", html);
+    }
+
+    [Fact]
+    public void Generate_NoDeprecatedOrVulnerable_RowHasNoColorClass()
+    {
+        var packages = new List<PackageEntry>
+        {
+            new("good-package", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, null, "1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null),
+        };
+
+        var html = GenerateAndRead("Test Report", packages, []);
+
+        Assert.DoesNotContain("<td class=\"version version-deprecated\">", html);
+        Assert.DoesNotContain("<td class=\"version version-vulnerable\">", html);
+    }
+
+    [Fact]
+    public void Generate_CurrentDeprecatedLatestVulnerable_SeparateColors()
+    {
+        var packages = new List<PackageEntry>
+        {
+            new("mixed-package", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", "Deprecated", null, "2.0.0", "https://example.com/latest", "MIT", "2024-06-15", null, "CVE-2024-5678 Critical"),
+        };
+
+        var html = GenerateAndRead("Test Report", packages, []);
+
+        Assert.Contains("<td class=\"version version-deprecated\"><a href=\"https://example.com\"", html);
+        Assert.Contains("<td class=\"version version-vulnerable\">", html);
     }
 
     private static int CountOccurrences(string text, string pattern)

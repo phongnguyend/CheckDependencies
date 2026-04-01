@@ -35,6 +35,11 @@ public static class HtmlReportGenerator
         streamWriter.WriteLine("        .vulnerable { color: #d73a49; }");
         streamWriter.WriteLine("        .icon-deprecated { cursor: help; font-size: 1.2em; }");
         streamWriter.WriteLine("        .icon-vulnerable { cursor: help; font-size: 1.2em; }");
+        streamWriter.WriteLine("        .version-deprecated { color: #b08800; }");
+        streamWriter.WriteLine("        .version-deprecated a { color: #b08800; }");
+        streamWriter.WriteLine("        .version-vulnerable { color: #d73a49; }");
+        streamWriter.WriteLine("        .version-vulnerable a { color: #d73a49; }");
+        streamWriter.WriteLine("        thead tr:first-child th[colspan] { text-align: center; background-color: #e6e6e6; }");
         streamWriter.WriteLine("    </style>");
         streamWriter.WriteLine("</head>");
         streamWriter.WriteLine("<body>");
@@ -43,19 +48,23 @@ public static class HtmlReportGenerator
         streamWriter.WriteLine("    <table>");
         streamWriter.WriteLine("        <thead>");
         streamWriter.WriteLine("            <tr>");
-        streamWriter.WriteLine("                <th>Name</th>");
+        streamWriter.WriteLine("                <th rowspan=\"2\">Name</th>");
+        streamWriter.WriteLine("                <th rowspan=\"2\">Version</th>");
+        streamWriter.WriteLine("                <th colspan=\"5\">Current Resolved Version</th>");
+        streamWriter.WriteLine("                <th colspan=\"5\">Latest Version</th>");
+        streamWriter.WriteLine("                <th rowspan=\"2\">Projects</th>");
+        streamWriter.WriteLine("            </tr>");
+        streamWriter.WriteLine("            <tr>");
         streamWriter.WriteLine("                <th>Version</th>");
-        streamWriter.WriteLine("                <th>Resolved Version</th>");
         streamWriter.WriteLine("                <th>License</th>");
         streamWriter.WriteLine("                <th>Published Date</th>");
         streamWriter.WriteLine("                <th>Deprecated</th>");
-        streamWriter.WriteLine("                <th>Vulnerabilities</th>");
-        streamWriter.WriteLine("                <th>Latest Version</th>");
-        streamWriter.WriteLine("                <th>Latest License</th>");
-        streamWriter.WriteLine("                <th>Latest Published Date</th>");
-        streamWriter.WriteLine("                <th>Latest Deprecated</th>");
-        streamWriter.WriteLine("                <th>Latest Vulnerabilities</th>");
-        streamWriter.WriteLine("                <th>Projects</th>");
+        streamWriter.WriteLine("                <th>Vulnerable</th>");
+        streamWriter.WriteLine("                <th>Version</th>");
+        streamWriter.WriteLine("                <th>License</th>");
+        streamWriter.WriteLine("                <th>Published Date</th>");
+        streamWriter.WriteLine("                <th>Deprecated</th>");
+        streamWriter.WriteLine("                <th>Vulnerable</th>");
         streamWriter.WriteLine("            </tr>");
         streamWriter.WriteLine("        </thead>");
         streamWriter.WriteLine("        <tbody>");
@@ -90,15 +99,22 @@ public static class HtmlReportGenerator
             if (publishedDateDiffers)
                 latestPublishedDateHtml = $"<strong>{latestPublishedDateHtml}</strong>";
 
+            var currentVersionClass = !string.IsNullOrWhiteSpace(package.Vulnerabilities) ? "version version-vulnerable"
+                : !string.IsNullOrWhiteSpace(package.Deprecated) ? "version version-deprecated"
+                : "version";
+            var latestVersionClass = !string.IsNullOrWhiteSpace(package.LatestVulnerabilities) ? "version version-vulnerable"
+                : !string.IsNullOrWhiteSpace(package.LatestDeprecated) ? "version version-deprecated"
+                : "version";
+
             streamWriter.WriteLine("            <tr>");
             streamWriter.WriteLine($"                <td class=\"package-name\">{System.Net.WebUtility.HtmlEncode(package.Name)}</td>");
             streamWriter.WriteLine($"                <td class=\"version\">{System.Net.WebUtility.HtmlEncode(package.Version ?? "N/A")}</td>");
-            streamWriter.WriteLine($"                <td class=\"version\"><a href=\"{package.Url}\" target=\"_blank\">{System.Net.WebUtility.HtmlEncode(package.ResolvedVersion ?? "N/A")}</a></td>");
+            streamWriter.WriteLine($"                <td class=\"{currentVersionClass}\"><a href=\"{package.Url}\" target=\"_blank\">{System.Net.WebUtility.HtmlEncode(package.ResolvedVersion ?? "N/A")}</a></td>");
             streamWriter.WriteLine($"                <td class=\"license\">{licenseHtml}</td>");
             streamWriter.WriteLine($"                <td class=\"published-date\">{publishedDateHtml}</td>");
             streamWriter.WriteLine($"                <td class=\"deprecated\">{deprecatedHtml}</td>");
             streamWriter.WriteLine($"                <td class=\"vulnerable\">{vulnerabilitiesHtml}</td>");
-            streamWriter.WriteLine($"                <td class=\"version\">{latestVersionHtml}</td>");
+            streamWriter.WriteLine($"                <td class=\"{latestVersionClass}\">{latestVersionHtml}</td>");
             streamWriter.WriteLine($"                <td class=\"license\">{latestLicenseHtml}</td>");
             streamWriter.WriteLine($"                <td class=\"published-date\">{latestPublishedDateHtml}</td>");
             streamWriter.WriteLine($"                <td class=\"deprecated\">{latestDeprecatedHtml}</td>");
