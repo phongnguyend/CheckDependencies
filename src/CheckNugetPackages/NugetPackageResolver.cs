@@ -88,14 +88,6 @@ public static class NugetPackageResolver
                     if (catalogEntry == null)
                         continue;
 
-                    // Check for the requested version
-                    if (string.Equals(catalogEntry.Version, version, StringComparison.OrdinalIgnoreCase))
-                    {
-                        license = !string.IsNullOrEmpty(catalogEntry.LicenseExpression) ? catalogEntry.LicenseExpression : catalogEntry.LicenseUrl;
-                        publishedDate = catalogEntry.Published?.ToString("yyyy-MM-dd");
-                        deprecated = FormatDeprecation(catalogEntry.Deprecation);
-                        vulnerabilities = FormatVulnerabilities(catalogEntry.Vulnerabilities);
-                    }
                     allEntries.Add((catalogEntry, item));
 
                     // Track the latest (non-prerelease) version
@@ -120,7 +112,7 @@ public static class NugetPackageResolver
                 // If exact version exists, prefer exact
                 if (availableVersions.Contains(version, StringComparer.OrdinalIgnoreCase))
                 {
-                    resolvedVersion = availableVersions.First(v => string.Equals(v, version, StringComparison.OrdinalIgnoreCase));
+                    resolvedVersion = availableVersions.First(v => CompareVersions(v, version) == 0);
                 }
                 else
                 {
@@ -138,7 +130,7 @@ public static class NugetPackageResolver
             // Extract info for resolved version
             if (!string.IsNullOrWhiteSpace(resolvedVersion))
             {
-                var match = allEntries.FirstOrDefault(e => string.Equals(e.Entry.Version, resolvedVersion, StringComparison.OrdinalIgnoreCase));
+                var match = allEntries.FirstOrDefault(e => CompareVersions(e.Entry.Version, resolvedVersion) == 0);
                 if (match.Entry != null)
                 {
                     var catalogEntry = match.Entry;
@@ -149,7 +141,7 @@ public static class NugetPackageResolver
                 }
             }
 
-            string? latestVersion = latestEntry?.Version;
+            string? latestVersion = !string.IsNullOrEmpty(latestEntry?.Version) ? NuGetVersion.Parse(latestEntry.Version).ToNormalizedString() : latestEntry?.Version;
             string? latestLicense = null;
             string? latestPublishedDate = null;
             string? latestDeprecated = null;
@@ -298,20 +290,7 @@ public static class NugetPackageResolver
         if (a == null) return -1;
         if (b == null) return 1;
 
-        // Strip prerelease suffix for comparison
-        var aParts = a.Split('-')[0].Split('.');
-        var bParts = b.Split('-')[0].Split('.');
-
-        var maxLen = Math.Max(aParts.Length, bParts.Length);
-        for (var i = 0; i < maxLen; i++)
-        {
-            var aNum = i < aParts.Length && int.TryParse(aParts[i], out var av) ? av : 0;
-            var bNum = i < bParts.Length && int.TryParse(bParts[i], out var bv) ? bv : 0;
-            if (aNum != bNum)
-                return aNum.CompareTo(bNum);
-        }
-
-        return 0;
+        return NuGetVersion.Parse(a).CompareTo(NuGetVersion.Parse(b));
     }
 
     private class RegistrationIndex
