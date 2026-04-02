@@ -73,6 +73,9 @@ public static class NugetPackageResolver
             RegistrationLeaf? latestLeaf = null;
 
             // Search through pages for the matching version and track the latest version
+            // Collect all entries and track the latest (non-prerelease) version
+            var allEntries = new List<(CatalogEntry Entry, RegistrationLeaf Leaf)>();
+
             foreach (var page in registration.Items)
             {
                 if (page.Items == null)
@@ -92,6 +95,7 @@ public static class NugetPackageResolver
                         deprecated = FormatDeprecation(catalogEntry.Deprecation);
                         vulnerabilities = FormatVulnerabilities(catalogEntry.Vulnerabilities);
                     }
+                    allEntries.Add((catalogEntry, item));
 
                     // Track the latest (non-prerelease) version
                     if (catalogEntry.Listed != false && !IsPrerelease(catalogEntry.Version))
@@ -102,6 +106,45 @@ public static class NugetPackageResolver
                             latestLeaf = item;
                         }
                     }
+                }
+            }
+
+            // Build a list of available version strings
+            var availableVersions = allEntries.Select(e => e.Entry.Version ?? string.Empty).Where(s => !string.IsNullOrEmpty(s)).ToList();
+
+            // Resolve the requested version (support NuGet version range syntax)
+            string? resolvedVersion = null;
+            if (!string.IsNullOrWhiteSpace(version))
+            {
+                // If exact version exists, prefer exact
+                if (availableVersions.Contains(version, StringComparer.OrdinalIgnoreCase))
+                {
+                    resolvedVersion = availableVersions.First(v => string.Equals(v, version, StringComparison.OrdinalIgnoreCase));
+                }
+                else
+                {
+                    // Try to resolve range/wildcard
+                    resolvedVersion = ResolveNugetVersion(version, availableVersions);
+                }
+            }
+
+            // If not resolved, pick latest (non-prerelease)
+            if (string.IsNullOrWhiteSpace(resolvedVersion))
+            {
+                resolvedVersion = latestEntry?.Version;
+            }
+
+            // Extract info for resolved version
+            if (!string.IsNullOrWhiteSpace(resolvedVersion))
+            {
+                var match = allEntries.FirstOrDefault(e => string.Equals(e.Entry.Version, resolvedVersion, StringComparison.OrdinalIgnoreCase));
+                if (match.Entry != null)
+                {
+                    var catalogEntry = match.Entry;
+                    license = !string.IsNullOrEmpty(catalogEntry.LicenseExpression) ? catalogEntry.LicenseExpression : catalogEntry.LicenseUrl;
+                    publishedDate = catalogEntry.Published?.ToString("yyyy-MM-dd");
+                    deprecated = FormatDeprecation(catalogEntry.Deprecation);
+                    vulnerabilities = FormatVulnerabilities(catalogEntry.Vulnerabilities);
                 }
             }
 
@@ -119,7 +162,7 @@ public static class NugetPackageResolver
                 latestVulnerabilities = FormatVulnerabilities(latestEntry.Vulnerabilities);
             }
 
-            return new PackageInfo(version, license, publishedDate, deprecated, vulnerabilities, latestVersion, latestLicense, latestPublishedDate, latestDeprecated, latestVulnerabilities);
+            return new PackageInfo(resolvedVersion, license, publishedDate, deprecated, vulnerabilities, latestVersion, latestLicense, latestPublishedDate, latestDeprecated, latestVulnerabilities);
         }
         catch (Exception ex)
         {
@@ -204,6 +247,126 @@ public static class NugetPackageResolver
             return false;
 
         return version.Contains('-');
+    }
+
+    // Compare numeric parts and treat prerelease as lower precedence than release
+    private static int CompareNugetVersions(string? a, string? b)
+    {
+        var numCmp = CompareVersions(a, b);
+        if (numCmp != 0)
+            return numCmp;
+
+        var aIsPre = !string.IsNullOrEmpty(a) && a.Contains('-');
+        var bIsPre = !string.IsNullOrEmpty(b) && b.Contains('-');
+
+        if (aIsPre == bIsPre) // both pre or both not pre
+        {
+            if (!aIsPre) return 0;
+            // both prerelease: compare prerelease identifiers lexically
+            var aPre = a!.Split('-', 2)[1];
+            var bPre = b!.Split('-', 2)[1];
+            return string.Compare(aPre, bPre, StringComparison.Ordinal);
+        }
+
+        // non-prerelease is greater
+        return aIsPre ? -1 : 1;
+    }
+
+    // Resolve NuGet version range or floating versions to the highest matching available version
+    internal static string? ResolveNugetVersion(string? range, List<string> availableVersions)
+    {
+        if (string.IsNullOrWhiteSpace(range))
+            return null;
+
+        var trimmed = range.Trim();
+
+        // If it's a bracketed range like [1.0,2.0) or (1.0,)
+        if ((trimmed.StartsWith('[') || trimmed.StartsWith('(')) && (trimmed.EndsWith(']') || trimmed.EndsWith(')')))
+        {
+            var inclusiveLower = trimmed.StartsWith('[');
+            var inclusiveUpper = trimmed.EndsWith(']');
+            var inner = trimmed[1..^1];
+            var parts = inner.Split(',', 2);
+            var lower = parts.Length > 0 ? parts[0].Trim() : string.Empty;
+            var upper = parts.Length > 1 ? parts[1].Trim() : string.Empty;
+
+            var allowPrerelease = (lower.Contains('-') || upper.Contains('-'));
+
+            var candidates = availableVersions.Where(v =>
+            {
+                if (string.IsNullOrEmpty(v)) return false;
+                // lower bound
+                if (!string.IsNullOrEmpty(lower))
+                {
+                    var cmp = CompareNugetVersions(v, lower);
+                    if (cmp < 0 || (!inclusiveLower && cmp == 0))
+                        return false;
+                }
+                // upper bound
+                if (!string.IsNullOrEmpty(upper))
+                {
+                    var cmp = CompareNugetVersions(v, upper);
+                    if (cmp > 0 || (!inclusiveUpper && cmp == 0))
+                        return false;
+                }
+
+                if (!allowPrerelease && IsPrerelease(v))
+                    return false;
+
+                return true;
+            }).ToList();
+
+            if (!candidates.Any()) return null;
+
+            return candidates.OrderByDescending(v => v, Comparer<string>.Create(CompareNugetVersions)).First();
+        }
+
+        // Wildcard/floating versions like 1.*, 1.2.*
+        if (trimmed.Contains('*') || trimmed.EndsWith(".x", StringComparison.OrdinalIgnoreCase))
+        {
+            var norm = trimmed.Replace("*", "x");
+            var parts = norm.Split('.');
+            if (parts.Length >= 1 && int.TryParse(parts[0], out var major))
+            {
+                if (parts.Length == 1 || (parts.Length >= 2 && (parts[1].Equals("x", StringComparison.OrdinalIgnoreCase))))
+                {
+                    // 1 or 1.x => >=1.0.0 <2.0.0
+                    var candidates = availableVersions.Where(v =>
+                    {
+                        var cmpLow = CompareNugetVersions(v, $"{major}.0.0");
+                        var cmpHigh = CompareNugetVersions(v, $"{major + 1}.0.0");
+                        return cmpLow >= 0 && cmpHigh < 0 && !IsPrerelease(v);
+                    }).ToList();
+
+                    if (candidates.Any())
+                        return candidates.OrderByDescending(v => v, Comparer<string>.Create(CompareNugetVersions)).First();
+                }
+                else if (parts.Length >= 2 && int.TryParse(parts[1], out var minor))
+                {
+                    // 1.2.x => >=1.2.0 <1.3.0
+                    var candidates = availableVersions.Where(v =>
+                    {
+                        var cmpLow = CompareNugetVersions(v, $"{major}.{minor}.0");
+                        var cmpHigh = CompareNugetVersions(v, $"{major}.{minor + 1}.0");
+                        return cmpLow >= 0 && cmpHigh < 0 && !IsPrerelease(v);
+                    }).ToList();
+
+                    if (candidates.Any())
+                        return candidates.OrderByDescending(v => v, Comparer<string>.Create(CompareNugetVersions)).First();
+                }
+            }
+
+            return null;
+        }
+
+        // If it looks like an exact version (including prerelease), just return it if available
+        if (!trimmed.Contains(',') && !trimmed.Contains(' ') && !trimmed.StartsWith('^') && !trimmed.StartsWith('~'))
+        {
+            return availableVersions.FirstOrDefault(v => string.Equals(v, trimmed, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Fallback: unsupported complex range syntax - try to find exact match
+        return availableVersions.FirstOrDefault(v => string.Equals(v, trimmed, StringComparison.OrdinalIgnoreCase));
     }
 
     private static int CompareVersions(string? a, string? b)

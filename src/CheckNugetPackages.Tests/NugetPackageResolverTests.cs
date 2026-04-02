@@ -202,4 +202,19 @@ public class NugetPackageResolverTests
     {
         Assert.Null(NugetPackageResolver.FormatVulnerabilities([]));
     }
+
+    [Theory]
+    [InlineData("1.0.0", new[] { "1.0.0" }, "1.0.0")]
+    [InlineData("[1.0.0,2.0.0)", new[] { "1.0.0", "1.5.0", "2.0.0" }, "1.5.0")]
+    [InlineData("(,1.0.0]", new[] { "0.9.0", "1.0.0", "1.0.1" }, "1.0.0")]
+    [InlineData("[1.0.0,)", new[] { "1.0.0", "1.1.0", "2.0.0" }, "2.0.0")]
+    [InlineData("1.*", new[] { "1.0.0", "1.5.0", "2.0.0" }, "1.5.0")]
+    [InlineData("1.2.*", new[] { "1.2.0", "1.2.5", "1.3.0" }, "1.2.5")]
+    [InlineData("1.2.3-beta", new[] { "1.2.3-alpha", "1.2.3-beta", "1.2.3" }, "1.2.3-beta")]
+    [InlineData("[1.0.0,1.0.0]", new[] { "1.0.0" }, "1.0.0")]
+    public void ResolveNugetVersion_BasicCases(string range, string[] available, string expected)
+    {
+        var result = NugetPackageResolver.ResolveNugetVersion(range, new List<string>(available));
+        Assert.Equal(expected, result);
+    }
 }
