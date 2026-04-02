@@ -1,3 +1,4 @@
+﻿using NuGet.Versioning;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http.Json;
@@ -249,124 +250,46 @@ public static class NugetPackageResolver
         return version.Contains('-');
     }
 
-    // Compare numeric parts and treat prerelease as lower precedence than release
-    private static int CompareNugetVersions(string? a, string? b)
-    {
-        var numCmp = CompareVersions(a, b);
-        if (numCmp != 0)
-            return numCmp;
-
-        var aIsPre = !string.IsNullOrEmpty(a) && a.Contains('-');
-        var bIsPre = !string.IsNullOrEmpty(b) && b.Contains('-');
-
-        if (aIsPre == bIsPre) // both pre or both not pre
-        {
-            if (!aIsPre) return 0;
-            // both prerelease: compare prerelease identifiers lexically
-            var aPre = a!.Split('-', 2)[1];
-            var bPre = b!.Split('-', 2)[1];
-            return string.Compare(aPre, bPre, StringComparison.Ordinal);
-        }
-
-        // non-prerelease is greater
-        return aIsPre ? -1 : 1;
-    }
-
     // Resolve NuGet version range or floating versions to the highest matching available version
-    internal static string? ResolveNugetVersion(string? range, List<string> availableVersions)
+    public static string? ResolveNugetVersion(string range, IEnumerable<string> versions)
     {
         if (string.IsNullOrWhiteSpace(range))
             return null;
 
-        var trimmed = range.Trim();
+        var parsedVersions = versions
+            .Select(v => NuGetVersion.TryParse(v, out var nv) ? nv : null)
+            .Where(v => v != null)
+            .Cast<NuGetVersion>()
+            .ToList();
 
-        // If it's a bracketed range like [1.0,2.0) or (1.0,)
-        if ((trimmed.StartsWith('[') || trimmed.StartsWith('(')) && (trimmed.EndsWith(']') || trimmed.EndsWith(')')))
-        {
-            var inclusiveLower = trimmed.StartsWith('[');
-            var inclusiveUpper = trimmed.EndsWith(']');
-            var inner = trimmed[1..^1];
-            var parts = inner.Split(',', 2);
-            var lower = parts.Length > 0 ? parts[0].Trim() : string.Empty;
-            var upper = parts.Length > 1 ? parts[1].Trim() : string.Empty;
-
-            var allowPrerelease = (lower.Contains('-') || upper.Contains('-'));
-
-            var candidates = availableVersions.Where(v =>
-            {
-                if (string.IsNullOrEmpty(v)) return false;
-                // lower bound
-                if (!string.IsNullOrEmpty(lower))
-                {
-                    var cmp = CompareNugetVersions(v, lower);
-                    if (cmp < 0 || (!inclusiveLower && cmp == 0))
-                        return false;
-                }
-                // upper bound
-                if (!string.IsNullOrEmpty(upper))
-                {
-                    var cmp = CompareNugetVersions(v, upper);
-                    if (cmp > 0 || (!inclusiveUpper && cmp == 0))
-                        return false;
-                }
-
-                if (!allowPrerelease && IsPrerelease(v))
-                    return false;
-
-                return true;
-            }).ToList();
-
-            if (!candidates.Any()) return null;
-
-            return candidates.OrderByDescending(v => v, Comparer<string>.Create(CompareNugetVersions)).First();
-        }
-
-        // Wildcard/floating versions like 1.*, 1.2.*
-        if (trimmed.Contains('*') || trimmed.EndsWith(".x", StringComparison.OrdinalIgnoreCase))
-        {
-            var norm = trimmed.Replace("*", "x");
-            var parts = norm.Split('.');
-            if (parts.Length >= 1 && int.TryParse(parts[0], out var major))
-            {
-                if (parts.Length == 1 || (parts.Length >= 2 && (parts[1].Equals("x", StringComparison.OrdinalIgnoreCase))))
-                {
-                    // 1 or 1.x => >=1.0.0 <2.0.0
-                    var candidates = availableVersions.Where(v =>
-                    {
-                        var cmpLow = CompareNugetVersions(v, $"{major}.0.0");
-                        var cmpHigh = CompareNugetVersions(v, $"{major + 1}.0.0");
-                        return cmpLow >= 0 && cmpHigh < 0 && !IsPrerelease(v);
-                    }).ToList();
-
-                    if (candidates.Any())
-                        return candidates.OrderByDescending(v => v, Comparer<string>.Create(CompareNugetVersions)).First();
-                }
-                else if (parts.Length >= 2 && int.TryParse(parts[1], out var minor))
-                {
-                    // 1.2.x => >=1.2.0 <1.3.0
-                    var candidates = availableVersions.Where(v =>
-                    {
-                        var cmpLow = CompareNugetVersions(v, $"{major}.{minor}.0");
-                        var cmpHigh = CompareNugetVersions(v, $"{major}.{minor + 1}.0");
-                        return cmpLow >= 0 && cmpHigh < 0 && !IsPrerelease(v);
-                    }).ToList();
-
-                    if (candidates.Any())
-                        return candidates.OrderByDescending(v => v, Comparer<string>.Create(CompareNugetVersions)).First();
-                }
-            }
-
+        if (parsedVersions.Count == 0)
             return null;
-        }
 
-        // If it looks like an exact version (including prerelease), just return it if available
-        if (!trimmed.Contains(',') && !trimmed.Contains(' ') && !trimmed.StartsWith('^') && !trimmed.StartsWith('~'))
+        // Exact version (like 1.2.3-beta)
+        if (NuGetVersion.TryParse(range, out var exact))
         {
-            return availableVersions.FirstOrDefault(v => string.Equals(v, trimmed, StringComparison.OrdinalIgnoreCase));
+            var match = parsedVersions
+                .FirstOrDefault(v => v == exact);
+
+            return match?.ToNormalizedString();
         }
 
-        // Fallback: unsupported complex range syntax - try to find exact match
-        return availableVersions.FirstOrDefault(v => string.Equals(v, trimmed, StringComparison.OrdinalIgnoreCase));
+        // Range or floating version
+        if (!VersionRange.TryParse(range, out var versionRange))
+            return null;
+
+        // Floating version
+        if (versionRange.Float != null)
+        {
+            var best = versionRange.FindBestMatch(parsedVersions);
+            return best?.ToNormalizedString();
+        }
+
+        // Normal range
+        return parsedVersions
+            .Where(v => versionRange.Satisfies(v))
+            .Max()
+            ?.ToNormalizedString();
     }
 
     private static int CompareVersions(string? a, string? b)
