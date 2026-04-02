@@ -26,4 +26,22 @@ public class PackageScannerTests
         Assert.True(File.Exists(Path.Combine(samplePath, "packages.html")), "HTML report not generated");
         Assert.True(File.Exists(Path.Combine(samplePath, "packages.md")), "Markdown report not generated");
     }
+
+    [Fact]
+    public async Task RunAsync_Samples_Monolith_CPM()
+    {
+        var samplePath = Path.Combine(_samplesDir, "Monolith-CPM");
+
+        var arguments = new ParsedArguments(
+            [samplePath],
+            ["csv", "html", "md"],
+            samplePath
+        );
+
+        await PackageScanner.RunAsync(arguments);
+
+        Assert.True(File.Exists(Path.Combine(samplePath, "packages.csv")), "CSV report not generated");
+        Assert.True(File.Exists(Path.Combine(samplePath, "packages.html")), "HTML report not generated");
+        Assert.True(File.Exists(Path.Combine(samplePath, "packages.md")), "Markdown report not generated");
+    }
 }

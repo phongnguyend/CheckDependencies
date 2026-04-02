@@ -1,0 +1,58 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="AWS.Logger.SeriLog" Version="4.0.2" />
+    <PackageVersion Include="AWSSDK.S3" Version="4.0.18.8" />
+    <PackageVersion Include="Azure.Communication.Sms" Version="1.0.2" />
+    <PackageVersion Include="Azure.Data.AppConfiguration" Version="1.9.0" />
+    <PackageVersion Include="Azure.Extensions.AspNetCore.Configuration.Secrets" Version="1.5.0" />
+    <PackageVersion Include="Azure.Identity" Version="1.18.0" />
+    <PackageVersion Include="Azure.Messaging.ServiceBus" Version="7.20.1" />
+    <PackageVersion Include="Azure.Monitor.OpenTelemetry.Exporter" Version="1.6.0" />
+    <PackageVersion Include="Azure.Storage.Blobs" Version="12.27.0" />
+    <PackageVersion Include="Castle.Core" Version="5.2.1" />
+    <PackageVersion Include="ClosedXML" Version="0.105.0" />
+    <PackageVersion Include="Confluent.Kafka" Version="2.13.2" />
+    <PackageVersion Include="CryptographyHelper" Version="3.1.0" />
+    <PackageVersion Include="CsvHelper" Version="33.1.0" />
+    <PackageVersion Include="Dapper.StrongName" Version="2.1.72" />
+    <PackageVersion Include="DinkToPdf" Version="1.0.8" />
+    <PackageVersion Include="Duende.IdentityModel" Version="8.0.0" />
+    <PackageVersion Include="ExcelDataReader" Version="3.8.0" />
+    <PackageVersion Include="Microsoft.ApplicationInsights.AspNetCore" Version="3.0.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.4" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.4" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="10.0.4" />
+    <PackageVersion Include="Microsoft.Azure.AppConfiguration.AspNetCore" Version="8.5.0" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.4" />
+    <PackageVersion Include="Microsoft.Extensions.Caching.Hybrid" Version="10.4.0" />
+    <PackageVersion Include="Microsoft.Extensions.Caching.Redis" Version="2.3.0" />
+    <PackageVersion Include="Microsoft.Extensions.Caching.SqlServer" Version="10.0.4" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.ApplicationInsights" Version="2.23.0" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.AzureAppServices" Version="10.0.4" />
+    <PackageVersion Include="Microsoft.Extensions.AI.OpenAI" Version="10.4.0" />
+    <PackageVersion Include="Microsoft.Graph" Version="5.103.0" />
+    <PackageVersion Include="OpenAI" Version="2.9.1" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.0" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.15.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" Version="1.10.0-beta.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.15.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Process" Version="1.10.0-beta.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.0" />
+    <PackageVersion Include="PuppeteerSharp" Version="24.38.0" />
+    <PackageVersion Include="Quartz" Version="3.16.1" />
+    <PackageVersion Include="RabbitMQ.Client" Version="7.2.1" />
+    <PackageVersion Include="RazorLight" Version="2.3.1" />
+    <PackageVersion Include="SendGrid" Version="9.29.3" />
+    <PackageVersion Include="Serilog" Version="4.3.1" />
+    <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageVersion Include="Serilog.Enrichers.Environment" Version="3.0.1" />
+    <PackageVersion Include="Serilog.Exceptions" Version="8.4.0" />
+    <PackageVersion Include="StyleCop.Analyzers" Version="1.1.118" />
+    <PackageVersion Include="Twilio" Version="7.14.3" />
+    <PackageVersion Include="VaultSharp" Version="1.17.5.1" />
+  </ItemGroup>
+</Project>
