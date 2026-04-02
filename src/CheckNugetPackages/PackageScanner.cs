@@ -1,4 +1,5 @@
-﻿using System.Xml.Linq;
+﻿using System.Text.Json;
+using System.Xml.Linq;
 
 namespace CheckNugetPackages;
 
@@ -115,16 +116,26 @@ public class PackageScanner
                 var projectName = new DirectoryInfo(Path.GetDirectoryName(file)).Name;
                 XDocument xdoc = XDocument.Load(file);
                 var ItemGroupNodes = xdoc.Descendants("ItemGroup");
+
+                Dictionary<string, string>? assetsVersionMap = null;
+
                 foreach (var ItemGroupNode in ItemGroupNodes)
                 {
                     var packageNodes = ItemGroupNode.Descendants("PackageReference");
                     foreach (var node in packageNodes)
                     {
                         var packageName = node.Attribute("Include")?.Value;
-                        var packageVersion = node.Attribute("Version")?.Value;
+                        var packageVersion = node.Attribute("Version")?.Value
+                            ?? node.Element("Version")?.Value;
 
                         if (string.IsNullOrWhiteSpace(packageName))
                             continue;
+
+                        if (string.IsNullOrWhiteSpace(packageVersion))
+                        {
+                            assetsVersionMap ??= LoadProjectAssetsVersionMap(file);
+                            assetsVersionMap.TryGetValue(packageName, out packageVersion);
+                        }
 
                         packages.Add((packageName, packageVersion, projectName));
                     }
@@ -134,5 +145,41 @@ public class PackageScanner
 
             return packages;
         }
+    }
+
+    internal static Dictionary<string, string> LoadProjectAssetsVersionMap(string csprojFilePath)
+    {
+        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        var projectDir = Path.GetDirectoryName(csprojFilePath);
+        var assetsPath = Path.Combine(projectDir, "obj", "project.assets.json");
+
+        if (!File.Exists(assetsPath))
+            return map;
+
+        var json = File.ReadAllText(assetsPath);
+        using var doc = JsonDocument.Parse(json);
+
+        if (doc.RootElement.TryGetProperty("targets", out var targets))
+        {
+            foreach (var targetFramework in targets.EnumerateObject())
+            {
+                foreach (var package in targetFramework.Value.EnumerateObject())
+                {
+                    var slashIndex = package.Name.IndexOf('/');
+                    if (slashIndex > 0)
+                    {
+                        var name = package.Name[..slashIndex];
+                        var version = package.Name[(slashIndex + 1)..];
+
+                        map.TryAdd(name, version);
+                    }
+                }
+
+                break;
+            }
+        }
+
+        return map;
     }
 }

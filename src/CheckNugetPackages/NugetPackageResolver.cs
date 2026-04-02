@@ -124,7 +124,7 @@ public static class NugetPackageResolver
             // If not resolved, pick latest (non-prerelease)
             if (string.IsNullOrWhiteSpace(resolvedVersion))
             {
-                resolvedVersion = latestEntry?.Version;
+                resolvedVersion = NormalizeVersion(latestEntry?.Version);
             }
 
             // Extract info for resolved version
@@ -141,7 +141,7 @@ public static class NugetPackageResolver
                 }
             }
 
-            string? latestVersion = !string.IsNullOrEmpty(latestEntry?.Version) ? NuGetVersion.Parse(latestEntry.Version).ToNormalizedString() : latestEntry?.Version;
+            string? latestVersion = NormalizeVersion(latestEntry?.Version);
             string? latestLicense = null;
             string? latestPublishedDate = null;
             string? latestDeprecated = null;
@@ -163,6 +163,11 @@ public static class NugetPackageResolver
         }
 
         return new PackageInfo(null, null, null, null, null, null, null, null, null, null);
+    }
+
+    private static string? NormalizeVersion(string? version)
+    {
+        return !string.IsNullOrEmpty(version) ? NuGetVersion.Parse(version).ToNormalizedString() : version;
     }
 
     internal static string? FormatDeprecation(DeprecationInfo? deprecation)
