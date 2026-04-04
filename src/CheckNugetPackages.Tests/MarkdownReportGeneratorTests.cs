@@ -50,7 +50,7 @@ public class MarkdownReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("Newtonsoft.Json", "13.0.3", "13.0.3", "ProjectA", "https://www.nuget.org/packages/Newtonsoft.Json/13.0.3", "MIT", "2023-03-08", null, null, "13.0.3", "https://www.nuget.org/packages/Newtonsoft.Json/13.0.3", "MIT", "2023-03-08", null, null),
+            new("Newtonsoft.Json", "13.0.3", "ProjectA", new VersionEntry("13.0.3", "https://www.nuget.org/packages/Newtonsoft.Json/13.0.3", "MIT", "2023-03-08", null, null), new VersionEntry("13.0.3", "https://www.nuget.org/packages/Newtonsoft.Json/13.0.3", "MIT", "2023-03-08", null, null)),
         };
 
         var md = GenerateAndRead("Test Report", packages, []);
@@ -67,8 +67,8 @@ public class MarkdownReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("System.Text.Json", "8.0.0", "8.0.0", "ProjectA", "https://example.com", "MIT", "2023-11-14", null, null, "8.0.0", "https://example.com/latest", "MIT", "2023-11-14", null, null),
-            new("Newtonsoft.Json", "13.0.3", "13.0.3", "ProjectA", "https://example.com", "MIT", "2023-03-08", null, null, "13.0.3", "https://example.com/latest", "MIT", "2023-03-08", null, null),
+            new("System.Text.Json", "8.0.0", "ProjectA", new VersionEntry("8.0.0", "https://example.com", "MIT", "2023-11-14", null, null), new VersionEntry("8.0.0", "https://example.com/latest", "MIT", "2023-11-14", null, null)),
+            new("Newtonsoft.Json", "13.0.3", "ProjectA", new VersionEntry("13.0.3", "https://example.com", "MIT", "2023-03-08", null, null), new VersionEntry("13.0.3", "https://example.com/latest", "MIT", "2023-03-08", null, null)),
         };
 
         var md = GenerateAndRead("Test Report", packages, ["System."]);
@@ -82,7 +82,7 @@ public class MarkdownReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("SomePackage", "1.0.0", "1.0.0", "ProjectA", "https://example.com", null, "2024-01-01", null, null, "1.0.0", null, null, null, null, null),
+            new("SomePackage", "1.0.0", "ProjectA", new VersionEntry("1.0.0", "https://example.com", null, "2024-01-01", null, null), new VersionEntry("1.0.0", null, null, null, null, null)),
         };
 
         var md = GenerateAndRead("Test Report", packages, []);
@@ -95,7 +95,7 @@ public class MarkdownReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("SomePackage", "1.0.0", "1.0.0", "ProjectA", "https://example.com", "MIT", null, null, null, "1.0.0", null, "MIT", null, null, null),
+            new("SomePackage", "1.0.0", "ProjectA", new VersionEntry("1.0.0", "https://example.com", "MIT", null, null, null), new VersionEntry("1.0.0", null, "MIT", null, null, null)),
         };
 
         var md = GenerateAndRead("Test Report", packages, []);
@@ -111,7 +111,7 @@ public class MarkdownReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("SomePackage", null, null, "ProjectA", "https://example.com", "MIT", "2024-01-01", null, null, "1.0.0", null, "MIT", "2024-01-01", null, null),
+            new("SomePackage", null, "ProjectA", new VersionEntry(null, "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("1.0.0", null, "MIT", "2024-01-01", null, null)),
         };
 
         var md = GenerateAndRead("Test Report", packages, []);
@@ -124,7 +124,7 @@ public class MarkdownReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("SomePackage", "1.0.0", "1.0.0", "ProjectA", "https://example.com", "https://licenses.nuget.org/MIT", "2024-01-01", null, null, "1.0.0", null, "MIT", "2024-01-01", null, null),
+            new("SomePackage", "1.0.0", "ProjectA", new VersionEntry("1.0.0", "https://example.com", "https://licenses.nuget.org/MIT", "2024-01-01", null, null), new VersionEntry("1.0.0", null, "MIT", "2024-01-01", null, null)),
         };
 
         var md = GenerateAndRead("Test Report", packages, []);
@@ -137,7 +137,7 @@ public class MarkdownReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("Pkg|Name", "1.0.0", "1.0.0", "Project|A", "https://example.com", "MIT|BSD", "2024-01-01", null, null, "1.0.0", null, "MIT|BSD", "2024-01-01", null, null),
+            new("Pkg|Name", "1.0.0", "Project|A", new VersionEntry("1.0.0", "https://example.com", "MIT|BSD", "2024-01-01", null, null), new VersionEntry("1.0.0", null, "MIT|BSD", "2024-01-01", null, null)),
         };
 
         var md = GenerateAndRead("Test Report", packages, []);
@@ -170,7 +170,7 @@ public class MarkdownReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("Newtonsoft.Json", "12.0.3", "12.0.3", "ProjectA", "https://www.nuget.org/packages/Newtonsoft.Json/12.0.3", "MIT", "2019-11-09", null, null, "13.0.3", "https://www.nuget.org/packages/Newtonsoft.Json/13.0.3", "MIT", "2023-03-08", null, null),
+            new("Newtonsoft.Json", "12.0.3", "ProjectA", new VersionEntry("12.0.3", "https://www.nuget.org/packages/Newtonsoft.Json/12.0.3", "MIT", "2019-11-09", null, null), new VersionEntry("13.0.3", "https://www.nuget.org/packages/Newtonsoft.Json/13.0.3", "MIT", "2023-03-08", null, null)),
         };
 
         var md = GenerateAndRead("Test Report", packages, []);

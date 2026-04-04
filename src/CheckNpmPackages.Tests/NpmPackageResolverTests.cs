@@ -14,8 +14,8 @@ public class NpmPackageResolverTests
 
         Assert.Single(results);
         var info = results[("lodash", "4.17.21")];
-        Assert.Equal("MIT", info.License);
-        Assert.False(string.IsNullOrEmpty(info.PublishedDate));
+        Assert.Equal("MIT", info.ResolvedVersion.License);
+        Assert.False(string.IsNullOrEmpty(info.ResolvedVersion.PublishedDate));
     }
 
     [Fact]
@@ -30,9 +30,9 @@ public class NpmPackageResolverTests
 
         Assert.Single(results);
         var info = results[("lodash", "4.17.21")];
-        Assert.NotNull(info.LatestVersion);
-        Assert.NotNull(info.LatestLicense);
-        Assert.NotNull(info.LatestPublishedDate);
+        Assert.NotNull(info.LatestVersion.Version);
+        Assert.NotNull(info.LatestVersion.License);
+        Assert.NotNull(info.LatestVersion.PublishedDate);
     }
 
     [Fact]
@@ -47,11 +47,11 @@ public class NpmPackageResolverTests
 
         Assert.Single(results);
         var info = results[("nonexistent-pkg-xyz-99999", "0.0.1")];
-        Assert.Null(info.License);
-        Assert.Null(info.PublishedDate);
-        Assert.Null(info.LatestVersion);
-        Assert.Null(info.LatestLicense);
-        Assert.Null(info.LatestPublishedDate);
+        Assert.Null(info.ResolvedVersion.License);
+        Assert.Null(info.ResolvedVersion.PublishedDate);
+        Assert.Null(info.LatestVersion.Version);
+        Assert.Null(info.LatestVersion.License);
+        Assert.Null(info.LatestVersion.PublishedDate);
     }
 
     [Fact]
@@ -66,8 +66,8 @@ public class NpmPackageResolverTests
         var results = await NpmPackgeResolver.GetLicensesAsync(packages);
 
         Assert.Equal(2, results.Count);
-        Assert.NotNull(results[("lodash", "4.17.21")].License);
-        Assert.NotNull(results[("express", "4.18.2")].License);
+        Assert.NotNull(results[("lodash", "4.17.21")].ResolvedVersion.License);
+        Assert.NotNull(results[("express", "4.18.2")].ResolvedVersion.License);
     }
 
     [Fact]
@@ -95,8 +95,8 @@ public class NpmPackageResolverTests
         var results = await NpmPackgeResolver.GetLicensesAsync(packages);
 
         var info = results[("lodash", "4.17.21")];
-        Assert.NotNull(info.PublishedDate);
-        Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", info.PublishedDate);
+        Assert.NotNull(info.ResolvedVersion.PublishedDate);
+        Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", info.ResolvedVersion.PublishedDate);
     }
 
     [Fact]
@@ -110,8 +110,8 @@ public class NpmPackageResolverTests
         var results = await NpmPackgeResolver.GetLicensesAsync(packages);
 
         var info = results[("lodash", "4.17.21")];
-        Assert.NotNull(info.LatestPublishedDate);
-        Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", info.LatestPublishedDate);
+        Assert.NotNull(info.LatestVersion.PublishedDate);
+        Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", info.LatestVersion.PublishedDate);
     }
 
     [Fact]
@@ -135,10 +135,10 @@ public class NpmPackageResolverTests
 
         Assert.Single(results);
         var info = results[("lodash", "^4.17.0")];
-        Assert.NotNull(info.ResolvedVersion);
-        Assert.StartsWith("4.", info.ResolvedVersion);
-        Assert.NotNull(info.License);
-        Assert.Equal("MIT", info.License);
+        Assert.NotNull(info.ResolvedVersion.Version);
+        Assert.StartsWith("4.", info.ResolvedVersion.Version);
+        Assert.NotNull(info.ResolvedVersion.License);
+        Assert.Equal("MIT", info.ResolvedVersion.License);
     }
 
     [Fact]
@@ -154,9 +154,9 @@ public class NpmPackageResolverTests
 
         Assert.Single(results);
         var info = results[("lodash", "~4.17.0")];
-        Assert.NotNull(info.ResolvedVersion);
-        Assert.StartsWith("4.17.", info.ResolvedVersion);
-        Assert.NotNull(info.License);
+        Assert.NotNull(info.ResolvedVersion.Version);
+        Assert.StartsWith("4.17.", info.ResolvedVersion.Version);
+        Assert.NotNull(info.ResolvedVersion.License);
     }
 
     [Fact]
@@ -377,7 +377,7 @@ public class NpmPackageResolverTests
 
         Assert.Single(results);
         var info = results[("request", "2.88.2")];
-        Assert.NotNull(info.Deprecated);
+        Assert.NotNull(info.ResolvedVersion.Deprecated);
     }
 
     [Fact]
@@ -392,7 +392,7 @@ public class NpmPackageResolverTests
 
         Assert.Single(results);
         var info = results[("lodash", "4.17.21")];
-        Assert.Null(info.Deprecated);
+        Assert.Null(info.ResolvedVersion.Deprecated);
     }
 
     [Fact]
@@ -408,6 +408,6 @@ public class NpmPackageResolverTests
 
         Assert.Single(results);
         var info = results[("lodash", "4.17.20")];
-        Assert.NotNull(info.Vulnerabilities);
+        Assert.NotNull(info.ResolvedVersion.Vulnerabilities);
     }
 }

@@ -76,21 +76,21 @@ public static class HtmlReportGenerator
                 continue;
             }
 
-            var licenseHtml = FormatLicenseHtml(package.License);
-            var publishedDateHtml = System.Net.WebUtility.HtmlEncode(package.PublishedDate ?? "N/A");
-            var deprecatedHtml = FormatDeprecatedHtml(package.Deprecated);
-            var vulnerabilitiesHtml = FormatVulnerabilitiesHtml(package.Vulnerabilities);
-            var latestVersionHtml = package.LatestUrl != null
-                ? $"<a href=\"{package.LatestUrl}\" target=\"_blank\">{System.Net.WebUtility.HtmlEncode(package.LatestVersion ?? "N/A")}</a>"
-                : System.Net.WebUtility.HtmlEncode(package.LatestVersion ?? "N/A");
-            var latestLicenseHtml = FormatLicenseHtml(package.LatestLicense);
-            var latestPublishedDateHtml = System.Net.WebUtility.HtmlEncode(package.LatestPublishedDate ?? "N/A");
-            var latestDeprecatedHtml = FormatDeprecatedHtml(package.LatestDeprecated);
-            var latestVulnerabilitiesHtml = FormatVulnerabilitiesHtml(package.LatestVulnerabilities);
+            var licenseHtml = FormatLicenseHtml(package.ResolvedVersion.License);
+            var publishedDateHtml = System.Net.WebUtility.HtmlEncode(package.ResolvedVersion.PublishedDate ?? "N/A");
+            var deprecatedHtml = FormatDeprecatedHtml(package.ResolvedVersion.Deprecated);
+            var vulnerabilitiesHtml = FormatVulnerabilitiesHtml(package.ResolvedVersion.Vulnerabilities);
+            var latestVersionHtml = package.LatestVersion.Url != null
+                ? $"<a href=\"{package.LatestVersion.Url}\" target=\"_blank\">{System.Net.WebUtility.HtmlEncode(package.LatestVersion.Version ?? "N/A")}</a>"
+                : System.Net.WebUtility.HtmlEncode(package.LatestVersion.Version ?? "N/A");
+            var latestLicenseHtml = FormatLicenseHtml(package.LatestVersion.License);
+            var latestPublishedDateHtml = System.Net.WebUtility.HtmlEncode(package.LatestVersion.PublishedDate ?? "N/A");
+            var latestDeprecatedHtml = FormatDeprecatedHtml(package.LatestVersion.Deprecated);
+            var latestVulnerabilitiesHtml = FormatVulnerabilitiesHtml(package.LatestVersion.Vulnerabilities);
 
-            var versionDiffers = !string.Equals(package.ResolvedVersion, package.LatestVersion, StringComparison.OrdinalIgnoreCase);
-            var licenseDiffers = !string.Equals(package.License, package.LatestLicense, StringComparison.OrdinalIgnoreCase);
-            var publishedDateDiffers = !string.Equals(package.PublishedDate, package.LatestPublishedDate, StringComparison.OrdinalIgnoreCase);
+            var versionDiffers = !string.Equals(package.ResolvedVersion.Version, package.LatestVersion.Version, StringComparison.OrdinalIgnoreCase);
+            var licenseDiffers = !string.Equals(package.ResolvedVersion.License, package.LatestVersion.License, StringComparison.OrdinalIgnoreCase);
+            var publishedDateDiffers = !string.Equals(package.ResolvedVersion.PublishedDate, package.LatestVersion.PublishedDate, StringComparison.OrdinalIgnoreCase);
 
             if (versionDiffers)
                 latestVersionHtml = $"<strong>{latestVersionHtml}</strong>";
@@ -99,17 +99,17 @@ public static class HtmlReportGenerator
             if (publishedDateDiffers)
                 latestPublishedDateHtml = $"<strong>{latestPublishedDateHtml}</strong>";
 
-            var currentVersionClass = !string.IsNullOrWhiteSpace(package.Vulnerabilities) ? "version version-vulnerable"
-                : !string.IsNullOrWhiteSpace(package.Deprecated) ? "version version-deprecated"
+            var currentVersionClass = !string.IsNullOrWhiteSpace(package.ResolvedVersion.Vulnerabilities) ? "version version-vulnerable"
+                : !string.IsNullOrWhiteSpace(package.ResolvedVersion.Deprecated) ? "version version-deprecated"
                 : "version";
-            var latestVersionClass = !string.IsNullOrWhiteSpace(package.LatestVulnerabilities) ? "version version-vulnerable"
-                : !string.IsNullOrWhiteSpace(package.LatestDeprecated) ? "version version-deprecated"
+            var latestVersionClass = !string.IsNullOrWhiteSpace(package.LatestVersion.Vulnerabilities) ? "version version-vulnerable"
+                : !string.IsNullOrWhiteSpace(package.LatestVersion.Deprecated) ? "version version-deprecated"
                 : "version";
 
             streamWriter.WriteLine("            <tr>");
             streamWriter.WriteLine($"                <td class=\"package-name\">{System.Net.WebUtility.HtmlEncode(package.Name)}</td>");
             streamWriter.WriteLine($"                <td class=\"version\">{System.Net.WebUtility.HtmlEncode(package.Version ?? "N/A")}</td>");
-            streamWriter.WriteLine($"                <td class=\"{currentVersionClass}\"><a href=\"{package.Url}\" target=\"_blank\">{System.Net.WebUtility.HtmlEncode(package.ResolvedVersion ?? "N/A")}</a></td>");
+            streamWriter.WriteLine($"                <td class=\"{currentVersionClass}\"><a href=\"{package.ResolvedVersion.Url}\" target=\"_blank\">{System.Net.WebUtility.HtmlEncode(package.ResolvedVersion.Version ?? "N/A")}</a></td>");
             streamWriter.WriteLine($"                <td class=\"license\">{licenseHtml}</td>");
             streamWriter.WriteLine($"                <td class=\"published-date\">{publishedDateHtml}</td>");
             streamWriter.WriteLine($"                <td class=\"deprecated\">{deprecatedHtml}</td>");

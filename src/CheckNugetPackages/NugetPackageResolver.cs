@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace CheckNugetPackages;
 
-public record PackageInfo(string? ResolvedVersion, string? License, string? PublishedDate, string? Deprecated, string? Vulnerabilities, string? LatestVersion, string? LatestLicense, string? LatestPublishedDate, string? LatestDeprecated, string? LatestVulnerabilities);
+public record PackageInfo(VersionEntry ResolvedVersion, VersionEntry LatestVersion);
 
 public static class NugetPackageResolver
 {
@@ -55,16 +55,16 @@ public static class NugetPackageResolver
         return results;
     }
 
-    private static async Task<PackageInfo> GetPackageInfoAsync(string packageName, string? version)
+    public static async Task<PackageInfo> GetPackageInfoAsync(string packageName, string? version)
     {
         if (string.IsNullOrWhiteSpace(packageName))
-            return new PackageInfo(null, null, null, null, null, null, null, null, null, null);
+            return new PackageInfo(new VersionEntry(null, null, null, null, null, null), new VersionEntry(null, null, null, null, null, null));
 
         try
         {
             var registration = await GetRegistrationAsync(packageName);
             if (registration?.Items == null)
-                return new PackageInfo(null, null, null, null, null, null, null, null, null, null);
+                return new PackageInfo(new VersionEntry(null, null, null, null, null, null), new VersionEntry(null, null, null, null, null, null));
 
             string? license = null;
             string? publishedDate = null;
@@ -155,14 +155,16 @@ public static class NugetPackageResolver
                 latestVulnerabilities = FormatVulnerabilities(latestEntry.Vulnerabilities);
             }
 
-            return new PackageInfo(resolvedVersion, license, publishedDate, deprecated, vulnerabilities, latestVersion, latestLicense, latestPublishedDate, latestDeprecated, latestVulnerabilities);
+            return new PackageInfo(
+                new VersionEntry(resolvedVersion, null, license, publishedDate, deprecated, vulnerabilities),
+                new VersionEntry(latestVersion, null, latestLicense, latestPublishedDate, latestDeprecated, latestVulnerabilities));
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Warning: Failed to fetch license for {packageName} {version}: {ex.Message}");
         }
 
-        return new PackageInfo(null, null, null, null, null, null, null, null, null, null);
+        return new PackageInfo(new VersionEntry(null, null, null, null, null, null), new VersionEntry(null, null, null, null, null, null));
     }
 
     private static string? NormalizeVersion(string? version)

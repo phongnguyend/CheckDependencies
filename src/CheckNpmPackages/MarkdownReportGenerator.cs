@@ -26,19 +26,19 @@ public static class MarkdownReportGenerator
                 continue;
             }
 
-            var licenseMd = FormatLicenseMarkdown(package.License);
+            var licenseMd = FormatLicenseMarkdown(package.ResolvedVersion.License);
             var versionMd = EscapeMarkdown(package.Version ?? "N/A");
-            var resolvedVersionMd = $"[{EscapeMarkdown(package.ResolvedVersion ?? "N/A")}]({package.Url})";
-            var publishedDateMd = EscapeMarkdown(package.PublishedDate ?? "N/A");
-            var deprecatedMd = EscapeMarkdown(package.Deprecated ?? "");
-            var vulnerabilitiesMd = EscapeMarkdown(package.Vulnerabilities ?? "");
-            var latestVersionMd = package.LatestUrl != null
-                ? $"[{EscapeMarkdown(package.LatestVersion ?? "N/A")}]({package.LatestUrl})"
-                : EscapeMarkdown(package.LatestVersion ?? "N/A");
-            var latestLicenseMd = FormatLicenseMarkdown(package.LatestLicense);
-            var latestPublishedDateMd = EscapeMarkdown(package.LatestPublishedDate ?? "N/A");
-            var latestDeprecatedMd = EscapeMarkdown(package.LatestDeprecated ?? "");
-            var latestVulnerabilitiesMd = EscapeMarkdown(package.LatestVulnerabilities ?? "");
+            var resolvedVersionMd = $"[{EscapeMarkdown(package.ResolvedVersion.Version ?? "N/A")}]({package.ResolvedVersion.Url})";
+            var publishedDateMd = EscapeMarkdown(package.ResolvedVersion.PublishedDate ?? "N/A");
+            var deprecatedMd = EscapeMarkdown(package.ResolvedVersion.Deprecated ?? "");
+            var vulnerabilitiesMd = EscapeMarkdown(package.ResolvedVersion.Vulnerabilities ?? "");
+            var latestVersionMd = package.LatestVersion.Url != null
+                ? $"[{EscapeMarkdown(package.LatestVersion.Version ?? "N/A")}]({package.LatestVersion.Url})"
+                : EscapeMarkdown(package.LatestVersion.Version ?? "N/A");
+            var latestLicenseMd = FormatLicenseMarkdown(package.LatestVersion.License);
+            var latestPublishedDateMd = EscapeMarkdown(package.LatestVersion.PublishedDate ?? "N/A");
+            var latestDeprecatedMd = EscapeMarkdown(package.LatestVersion.Deprecated ?? "");
+            var latestVulnerabilitiesMd = EscapeMarkdown(package.LatestVersion.Vulnerabilities ?? "");
 
             streamWriter.WriteLine($"| {EscapeMarkdown(package.Name)} | {versionMd} | {resolvedVersionMd} | {licenseMd} | {publishedDateMd} | {deprecatedMd} | {vulnerabilitiesMd} | {latestVersionMd} | {latestLicenseMd} | {latestPublishedDateMd} | {latestDeprecatedMd} | {latestVulnerabilitiesMd} | {EscapeMarkdown(package.Projects)} |");
         }

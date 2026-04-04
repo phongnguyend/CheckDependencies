@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 
 namespace CheckNpmPackages;
 
-public record PackageInfo(string? ResolvedVersion, string? License, string? PublishedDate, string? Deprecated, string? Vulnerabilities, string? LatestVersion, string? LatestLicense, string? LatestPublishedDate, string? LatestDeprecated, string? LatestVulnerabilities);
+public record PackageInfo(VersionEntry ResolvedVersion, VersionEntry LatestVersion);
 
 public static class NpmPackgeResolver
 {
@@ -70,20 +70,20 @@ public static class NpmPackgeResolver
                 string? vulnerabilities = null;
                 string? latestVulnerabilities = null;
 
-                if (!string.IsNullOrWhiteSpace(info.ResolvedVersion) &&
-                    bulkVulnMap.TryGetValue((key.Name, info.ResolvedVersion), out var rv))
+                if (!string.IsNullOrWhiteSpace(info.ResolvedVersion.Version) &&
+                    bulkVulnMap.TryGetValue((key.Name, info.ResolvedVersion.Version), out var rv))
                     vulnerabilities = rv;
 
-                if (!string.IsNullOrWhiteSpace(info.LatestVersion) &&
-                    bulkVulnMap.TryGetValue((key.Name, info.LatestVersion), out var lv))
+                if (!string.IsNullOrWhiteSpace(info.LatestVersion.Version) &&
+                    bulkVulnMap.TryGetValue((key.Name, info.LatestVersion.Version), out var lv))
                     latestVulnerabilities = lv;
 
                 if (vulnerabilities != null || latestVulnerabilities != null)
                 {
                     results[key] = info with
                     {
-                        Vulnerabilities = vulnerabilities ?? info.Vulnerabilities,
-                        LatestVulnerabilities = latestVulnerabilities ?? info.LatestVulnerabilities
+                        ResolvedVersion = info.ResolvedVersion with { Vulnerabilities = vulnerabilities ?? info.ResolvedVersion.Vulnerabilities },
+                        LatestVersion = info.LatestVersion with { Vulnerabilities = latestVulnerabilities ?? info.LatestVersion.Vulnerabilities }
                     };
                 }
             }
@@ -92,16 +92,16 @@ public static class NpmPackgeResolver
         return results;
     }
 
-    private static async Task<PackageInfo> GetPackageInfoAsync(string packageName, string? version, string? resolvedVersionHint = null)
+    public static async Task<PackageInfo> GetPackageInfoAsync(string packageName, string? version, string? resolvedVersionHint = null)
     {
         if (string.IsNullOrWhiteSpace(packageName))
-            return new PackageInfo(null, null, null, null, null, null, null, null, null, null);
+            return new PackageInfo(new VersionEntry(null, null, null, null, null, null), new VersionEntry(null, null, null, null, null, null));
 
         try
         {
             var doc = await GetPackageDocAsync(packageName);
             if (doc == null)
-                return new PackageInfo(null, null, null, null, null, null, null, null, null, null);
+                return new PackageInfo(new VersionEntry(null, null, null, null, null, null), new VersionEntry(null, null, null, null, null, null));
 
             var docValue = doc.Value;
 
@@ -200,23 +200,27 @@ public static class NpmPackgeResolver
             }
 
             return new PackageInfo(
-                !string.IsNullOrEmpty(resolvedVersion) ? resolvedVersion : null,
-                !string.IsNullOrEmpty(license) ? license : null,
-                publishedDate,
-                deprecated,
-                null,
-                latestVersion,
-                !string.IsNullOrEmpty(latestLicense) ? latestLicense : null,
-                latestPublishedDate,
-                latestDeprecated,
-                null);
+                new VersionEntry(
+                    !string.IsNullOrEmpty(resolvedVersion) ? resolvedVersion : null,
+                    null,
+                    !string.IsNullOrEmpty(license) ? license : null,
+                    publishedDate,
+                    deprecated,
+                    null),
+                new VersionEntry(
+                    latestVersion,
+                    null,
+                    !string.IsNullOrEmpty(latestLicense) ? latestLicense : null,
+                    latestPublishedDate,
+                    latestDeprecated,
+                    null));
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Warning: Failed to fetch license for {packageName} {version}: {ex.Message}");
         }
 
-        return new PackageInfo(null, null, null, null, null, null, null, null, null, null);
+        return new PackageInfo(new VersionEntry(null, null, null, null, null, null), new VersionEntry(null, null, null, null, null, null));
     }
 
     private static string? ExtractDeprecated(JsonElement versionDoc)
@@ -252,10 +256,10 @@ public static class NpmPackgeResolver
             foreach (var (key, info) in results)
             {
                 var versions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                if (!string.IsNullOrWhiteSpace(info.ResolvedVersion))
-                    versions.Add(info.ResolvedVersion);
-                if (!string.IsNullOrWhiteSpace(info.LatestVersion))
-                    versions.Add(info.LatestVersion);
+                if (!string.IsNullOrWhiteSpace(info.ResolvedVersion.Version))
+                    versions.Add(info.ResolvedVersion.Version);
+                if (!string.IsNullOrWhiteSpace(info.LatestVersion.Version))
+                    versions.Add(info.LatestVersion.Version);
 
                 if (versions.Count == 0)
                     continue;

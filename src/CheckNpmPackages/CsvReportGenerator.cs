@@ -19,18 +19,18 @@ public static class CsvReportGenerator
                 continue;
             }
 
-            var licenseValue = package.License ?? "";
-            var publishedDateValue = package.PublishedDate ?? "";
-            var deprecatedValue = package.Deprecated ?? "";
-            var vulnerabilitiesValue = package.Vulnerabilities ?? "";
-            var latestVersionValue = package.LatestVersion ?? "";
-            var latestLicenseValue = package.LatestLicense ?? "";
-            var latestPublishedDateValue = package.LatestPublishedDate ?? "";
-            var latestDeprecatedValue = package.LatestDeprecated ?? "";
-            var latestVulnerabilitiesValue = package.LatestVulnerabilities ?? "";
-            var latestUrlValue = package.LatestUrl ?? "";
-            var resolvedVersionValue = package.ResolvedVersion ?? "";
-            streamWriter.WriteLine($"{package.Name},{package.Version},\"{resolvedVersionValue}\",\"{licenseValue}\",\"{publishedDateValue}\",\"{deprecatedValue}\",\"{vulnerabilitiesValue}\",\"{latestVersionValue}\",\"{latestLicenseValue}\",\"{latestPublishedDateValue}\",\"{latestDeprecatedValue}\",\"{latestVulnerabilitiesValue}\",\"{package.Url}\",\"{latestUrlValue}\",\"{package.Projects}\"");
+            var licenseValue = package.ResolvedVersion.License ?? "";
+            var publishedDateValue = package.ResolvedVersion.PublishedDate ?? "";
+            var deprecatedValue = package.ResolvedVersion.Deprecated ?? "";
+            var vulnerabilitiesValue = package.ResolvedVersion.Vulnerabilities ?? "";
+            var latestVersionValue = package.LatestVersion.Version ?? "";
+            var latestLicenseValue = package.LatestVersion.License ?? "";
+            var latestPublishedDateValue = package.LatestVersion.PublishedDate ?? "";
+            var latestDeprecatedValue = package.LatestVersion.Deprecated ?? "";
+            var latestVulnerabilitiesValue = package.LatestVersion.Vulnerabilities ?? "";
+            var latestUrlValue = package.LatestVersion.Url ?? "";
+            var resolvedVersionValue = package.ResolvedVersion.Version ?? "";
+            streamWriter.WriteLine($"{package.Name},{package.Version},\"{resolvedVersionValue}\",\"{licenseValue}\",\"{publishedDateValue}\",\"{deprecatedValue}\",\"{vulnerabilitiesValue}\",\"{latestVersionValue}\",\"{latestLicenseValue}\",\"{latestPublishedDateValue}\",\"{latestDeprecatedValue}\",\"{latestVulnerabilitiesValue}\",\"{package.ResolvedVersion.Url}\",\"{latestUrlValue}\",\"{package.Projects}\"");
         }
     }
 }

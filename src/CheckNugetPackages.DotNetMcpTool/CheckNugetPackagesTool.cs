@@ -26,4 +26,21 @@ public class CheckNugetPackagesTool
         
         await PackageScanner.RunAsync(parsedArgs);
     }
+
+    [McpServerTool(Name = "GetNugetPackageVersion"), Description("Get information about a specific version of a NuGet package, including license, published date, deprecation and vulnerability status")]
+    public static async Task<VersionEntry> GetVersionAsync(
+        [Description("The NuGet package name (e.g. Newtonsoft.Json)")] string packageName,
+        [Description("The package version or version range (e.g. 13.0.3 or [1.0.0,2.0.0))")] string version)
+    {
+        var info = await NugetPackageResolver.GetPackageInfoAsync(packageName, version);
+        return info.ResolvedVersion;
+    }
+
+    [McpServerTool(Name = "GetNugetPackageLatestVersion"), Description("Get information about the latest version of a NuGet package, including license, published date, deprecation and vulnerability status")]
+    public static async Task<VersionEntry> GetLatestVersionAsync(
+        [Description("The NuGet package name (e.g. Newtonsoft.Json)")] string packageName)
+    {
+        var info = await NugetPackageResolver.GetPackageInfoAsync(packageName, null);
+        return info.LatestVersion;
+    }
 }

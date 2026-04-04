@@ -27,22 +27,26 @@ public class PackageScanner
             .Select(g =>
             {
                 var info = packageInfoMap.TryGetValue((g.Key.Name, g.Key.Version), out var pi) ? pi : null;
+                var resolvedVersion = info?.ResolvedVersion.Version;
+                var latestVersion = info?.LatestVersion.Version;
                 return new PackageEntry(
                     g.Key.Name,
                     g.Key.Version,
-                    info?.ResolvedVersion,
                     string.Join(", ", g.Select(x => x.Project)),
-                    $"https://www.nuget.org/packages/{g.Key.Name}/{info?.ResolvedVersion}",
-                    info?.License,
-                    info?.PublishedDate,
-                    info?.Deprecated,
-                    info?.Vulnerabilities,
-                    info?.LatestVersion,
-                    info?.LatestVersion != null ? $"https://www.nuget.org/packages/{g.Key.Name}/{info.LatestVersion}" : null,
-                    info?.LatestLicense,
-                    info?.LatestPublishedDate,
-                    info?.LatestDeprecated,
-                    info?.LatestVulnerabilities);
+                    new VersionEntry(
+                        resolvedVersion,
+                        $"https://www.nuget.org/packages/{g.Key.Name}/{resolvedVersion}",
+                        info?.ResolvedVersion.License,
+                        info?.ResolvedVersion.PublishedDate,
+                        info?.ResolvedVersion.Deprecated,
+                        info?.ResolvedVersion.Vulnerabilities),
+                    new VersionEntry(
+                        latestVersion,
+                        latestVersion != null ? $"https://www.nuget.org/packages/{g.Key.Name}/{latestVersion}" : null,
+                        info?.LatestVersion.License,
+                        info?.LatestVersion.PublishedDate,
+                        info?.LatestVersion.Deprecated,
+                        info?.LatestVersion.Vulnerabilities));
             })
             .OrderBy(x => x.Name)
             .ThenBy(x => x.Version).ToList();

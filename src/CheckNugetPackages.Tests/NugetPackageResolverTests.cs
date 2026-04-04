@@ -14,8 +14,8 @@ public class NugetPackageResolverTests
 
         Assert.Single(results);
         var info = results[("Newtonsoft.Json", "13.0.3")];
-        Assert.Equal("MIT", info.License);
-        Assert.False(string.IsNullOrEmpty(info.PublishedDate));
+        Assert.Equal("MIT", info.ResolvedVersion.License);
+        Assert.False(string.IsNullOrEmpty(info.ResolvedVersion.PublishedDate));
     }
 
     [Fact]
@@ -30,9 +30,9 @@ public class NugetPackageResolverTests
 
         Assert.Single(results);
         var info = results[("Newtonsoft.Json", "13.0.3")];
-        Assert.NotNull(info.LatestVersion);
-        Assert.NotNull(info.LatestLicense);
-        Assert.NotNull(info.LatestPublishedDate);
+        Assert.NotNull(info.LatestVersion.Version);
+        Assert.NotNull(info.LatestVersion.License);
+        Assert.NotNull(info.LatestVersion.PublishedDate);
     }
 
     [Fact]
@@ -47,11 +47,11 @@ public class NugetPackageResolverTests
 
         Assert.Single(results);
         var info = results[("NonExistentPackage_XYZ_12345", "0.0.1")];
-        Assert.Null(info.License);
-        Assert.Null(info.PublishedDate);
-        Assert.Null(info.LatestVersion);
-        Assert.Null(info.LatestLicense);
-        Assert.Null(info.LatestPublishedDate);
+        Assert.Null(info.ResolvedVersion.License);
+        Assert.Null(info.ResolvedVersion.PublishedDate);
+        Assert.Null(info.LatestVersion.Version);
+        Assert.Null(info.LatestVersion.License);
+        Assert.Null(info.LatestVersion.PublishedDate);
     }
 
     [Fact]
@@ -66,8 +66,8 @@ public class NugetPackageResolverTests
         var results = await NugetPackageResolver.GetLicensesAsync(packages);
 
         Assert.Equal(2, results.Count);
-        Assert.NotNull(results[("Newtonsoft.Json", "13.0.3")].License);
-        Assert.NotNull(results[("Serilog", "4.0.0")].License);
+        Assert.NotNull(results[("Newtonsoft.Json", "13.0.3")].ResolvedVersion.License);
+        Assert.NotNull(results[("Serilog", "4.0.0")].ResolvedVersion.License);
     }
 
     [Fact]
@@ -97,7 +97,7 @@ public class NugetPackageResolverTests
 
         Assert.Single(results);
         var info = results[("Castle.Core", "4.4.0")];
-        Assert.NotNull(info.License);
+        Assert.NotNull(info.ResolvedVersion.License);
     }
 
     [Fact]
@@ -111,8 +111,8 @@ public class NugetPackageResolverTests
         var results = await NugetPackageResolver.GetLicensesAsync(packages);
 
         var info = results[("Newtonsoft.Json", "13.0.3")];
-        Assert.NotNull(info.PublishedDate);
-        Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", info.PublishedDate);
+        Assert.NotNull(info.ResolvedVersion.PublishedDate);
+        Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", info.ResolvedVersion.PublishedDate);
     }
 
     [Fact]
@@ -126,8 +126,8 @@ public class NugetPackageResolverTests
         var results = await NugetPackageResolver.GetLicensesAsync(packages);
 
         var info = results[("Newtonsoft.Json", "13.0.3")];
-        Assert.NotNull(info.LatestPublishedDate);
-        Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", info.LatestPublishedDate);
+        Assert.NotNull(info.LatestVersion.PublishedDate);
+        Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", info.LatestVersion.PublishedDate);
     }
 
     [Fact]
@@ -150,7 +150,7 @@ public class NugetPackageResolverTests
 
         Assert.Single(results);
         var info = results[("Microsoft.Azure.EventHubs", "4.3.2")];
-        Assert.NotNull(info.Deprecated);
+        Assert.NotNull(info.ResolvedVersion.Deprecated);
     }
 
     [Fact]
@@ -166,7 +166,7 @@ public class NugetPackageResolverTests
 
         Assert.Single(results);
         var info = results[("System.Text.RegularExpressions", "4.3.0")];
-        Assert.NotNull(info.Vulnerabilities);
+        Assert.NotNull(info.ResolvedVersion.Vulnerabilities);
     }
 
     [Fact]
@@ -181,8 +181,8 @@ public class NugetPackageResolverTests
 
         Assert.Single(results);
         var info = results[("Newtonsoft.Json", "13.0.3")];
-        Assert.Null(info.Deprecated);
-        Assert.Null(info.Vulnerabilities);
+        Assert.Null(info.ResolvedVersion.Deprecated);
+        Assert.Null(info.ResolvedVersion.Vulnerabilities);
     }
 
     [Fact]

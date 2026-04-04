@@ -66,7 +66,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("lodash", "4.17.21", "4.17.21", "my-app", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null, "4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null),
+            new("lodash", "4.17.21", "my-app", new VersionEntry("4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null), new VersionEntry("4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null)),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -84,8 +84,8 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("@types/node", "20.0.0", "20.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, null, "20.1.0", "https://example.com/latest", "MIT", "2024-02-01", null, null),
-            new("lodash", "4.17.21", "4.17.21", "my-app", "https://example.com", "MIT", "2021-02-20", null, null, "4.17.21", "https://example.com/latest", "MIT", "2021-02-20", null, null),
+            new("@types/node", "20.0.0", "my-app", new VersionEntry("20.0.0", "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("20.1.0", "https://example.com/latest", "MIT", "2024-02-01", null, null)),
+            new("lodash", "4.17.21", "my-app", new VersionEntry("4.17.21", "https://example.com", "MIT", "2021-02-20", null, null), new VersionEntry("4.17.21", "https://example.com/latest", "MIT", "2021-02-20", null, null)),
         };
 
         var html = GenerateAndRead("Test Report", packages, ["@types/"]);
@@ -99,7 +99,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", null, "2024-01-01", null, null, "1.0.0", null, null, null, null, null),
+            new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", null, "2024-01-01", null, null), new VersionEntry("1.0.0", null, null, null, null, null)),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -112,7 +112,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", null, null, null, "1.0.0", null, "MIT", null, null, null),
+            new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", null, null, null), new VersionEntry("1.0.0", null, "MIT", null, null, null)),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -125,7 +125,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", null, null, "my-app", "https://example.com", "MIT", "2024-01-01", null, null, "1.0.0", null, "MIT", "2024-01-01", null, null),
+            new("some-pkg", null, "my-app", new VersionEntry(null, "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("1.0.0", null, "MIT", "2024-01-01", null, null)),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -139,7 +139,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "https://opensource.org/licenses/MIT", "2024-01-01", null, null, "1.0.0", null, "MIT", "2024-01-01", null, null),
+            new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "https://opensource.org/licenses/MIT", "2024-01-01", null, null), new VersionEntry("1.0.0", null, "MIT", "2024-01-01", null, null)),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -152,7 +152,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("pkg<name>", "1.0.0", "1.0.0", "project&a", "https://example.com", "license&co", "2024-01-01", null, null, "1.0.0", null, "license&co", "2024-01-01", null, null),
+            new("pkg<name>", "1.0.0", "project&a", new VersionEntry("1.0.0", "https://example.com", "license&co", "2024-01-01", null, null), new VersionEntry("1.0.0", null, "license&co", "2024-01-01", null, null)),
         };
 
         var html = GenerateAndRead("Title<>&", packages, []);
@@ -192,7 +192,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("lodash", "4.17.20", "4.17.20", "my-app", "https://www.npmjs.com/package/lodash/v/4.17.20", "MIT", "2020-10-27", null, null, "4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null),
+            new("lodash", "4.17.20", "my-app", new VersionEntry("4.17.20", "https://www.npmjs.com/package/lodash/v/4.17.20", "MIT", "2020-10-27", null, null), new VersionEntry("4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null)),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -206,7 +206,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, null, null, null, null, null, null, null),
+            new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry(null, null, null, null, null, null)),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -220,7 +220,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("lodash", "4.17.21", "4.17.21", "my-app", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null, "4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null),
+            new("lodash", "4.17.21", "my-app", new VersionEntry("4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null), new VersionEntry("4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null)),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -233,7 +233,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, null, "1.0.0", "https://example.com/latest", "Apache-2.0", "2024-01-01", null, null),
+            new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("1.0.0", "https://example.com/latest", "Apache-2.0", "2024-01-01", null, null)),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -248,7 +248,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, null, "1.0.0", "https://example.com/latest", "MIT", "2024-06-15", null, null),
+            new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("1.0.0", "https://example.com/latest", "MIT", "2024-06-15", null, null)),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -262,7 +262,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, null, "2.0.0", "https://example.com/latest", "Apache-2.0", "2024-06-15", null, null),
+            new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("2.0.0", "https://example.com/latest", "Apache-2.0", "2024-06-15", null, null)),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -277,7 +277,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", "^1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, null, "1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null),
+            new("some-pkg", "^1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null)),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -291,7 +291,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("old-package", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", "This package is deprecated", null, "1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null),
+            new("old-package", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", "This package is deprecated", null), new VersionEntry("1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null)),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -304,7 +304,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("vuln-package", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, "CVE-2024-1234 High", "1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null),
+            new("vuln-package", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, "CVE-2024-1234 High"), new VersionEntry("1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null)),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -317,7 +317,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, null, "1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null),
+            new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null)),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -331,7 +331,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, null, "1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null),
+            new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null)),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -345,7 +345,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, null, "2.0.0", "https://example.com/latest", "MIT", "2024-06-15", "Legacy package", null),
+            new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("2.0.0", "https://example.com/latest", "MIT", "2024-06-15", "Legacy package", null)),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -358,7 +358,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, null, "2.0.0", "https://example.com/latest", "MIT", "2024-06-15", null, "CVE-2024-5678 Critical"),
+            new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("2.0.0", "https://example.com/latest", "MIT", "2024-06-15", null, "CVE-2024-5678 Critical")),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -371,12 +371,12 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", "Use <new-package> instead", null, "1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null),
+            new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", "Use <new-package> ??????", null), new VersionEntry("1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null)),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
 
-        Assert.Contains("title=\"Use &lt;new-package&gt; instead\"", html);
+        Assert.Contains("title=\"Use &lt;new-package&gt; ??????\"", html);
     }
 
     [Fact]
@@ -384,7 +384,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("old-package", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", "This package is deprecated", null, "1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null),
+            new("old-package", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", "This package is deprecated", null), new VersionEntry("1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null)),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -398,7 +398,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("vuln-package", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, "CVE-2024-1234 High", "1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null),
+            new("vuln-package", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, "CVE-2024-1234 High"), new VersionEntry("1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null)),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -412,7 +412,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("bad-package", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", "Deprecated", "CVE-2024-1234 High", "1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null),
+            new("bad-package", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", "Deprecated", "CVE-2024-1234 High"), new VersionEntry("1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null)),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -426,7 +426,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, null, "2.0.0", "https://example.com/latest", "MIT", "2024-06-15", "Legacy package", null),
+            new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("2.0.0", "https://example.com/latest", "MIT", "2024-06-15", "Legacy package", null)),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -439,7 +439,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, null, "2.0.0", "https://example.com/latest", "MIT", "2024-06-15", null, "CVE-2024-5678 Critical"),
+            new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("2.0.0", "https://example.com/latest", "MIT", "2024-06-15", null, "CVE-2024-5678 Critical")),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -452,7 +452,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("good-package", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", null, null, "1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null),
+            new("good-package", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null)),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
@@ -466,7 +466,7 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("mixed-package", "1.0.0", "1.0.0", "my-app", "https://example.com", "MIT", "2024-01-01", "Deprecated", null, "2.0.0", "https://example.com/latest", "MIT", "2024-06-15", null, "CVE-2024-5678 Critical"),
+            new("mixed-package", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", "Deprecated", null), new VersionEntry("2.0.0", "https://example.com/latest", "MIT", "2024-06-15", null, "CVE-2024-5678 Critical")),
         };
 
         var html = GenerateAndRead("Test Report", packages, []);
