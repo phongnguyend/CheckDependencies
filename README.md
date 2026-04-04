@@ -1,15 +1,22 @@
 # Check Dependencies
 
-A collection of .NET CLI tools to scan and generate reports for package dependencies in your projects.
+A collection of .NET CLI tools and MCP (Model Context Protocol) tools to scan and generate reports for package dependencies in your projects.
 
 ## Tools
 
 - **CheckNugetPackages** - Scans .NET projects for NuGet package dependencies.
 - **CheckNpmPackages** - Scans Node.js projects for npm package dependencies.
 
+Each tool is available as both a **.NET CLI tool** and a **.NET MCP tool**:
+
+| Tool | CLI Tool | MCP Tool |
+| --- | --- | --- |
+| CheckNugetPackages | [CheckNugetPackages.DotNetCliTool](https://www.nuget.org/packages/CheckNugetPackages.DotNetCliTool) | [CheckNugetPackages.DotNetMcpTool](https://www.nuget.org/packages/CheckNugetPackages.DotNetMcpTool) |
+| CheckNpmPackages | [CheckNpmPackages.DotNetCliTool](https://www.nuget.org/packages/CheckNpmPackages.DotNetCliTool) | [CheckNpmPackages.DotNetMcpTool](https://www.nuget.org/packages/CheckNpmPackages.DotNetMcpTool) |
+
 ## Installation
 
-### As .NET Global Tool
+### As .NET Global Tool (CLI)
 
 Install the tools globally using the .NET CLI:
 
@@ -25,6 +32,22 @@ Or visit the NuGet package pages:
 - [CheckNugetPackages.DotNetCliTool](https://www.nuget.org/packages/CheckNugetPackages.DotNetCliTool)
 - [CheckNpmPackages.DotNetCliTool](https://www.nuget.org/packages/CheckNpmPackages.DotNetCliTool)
 
+### As .NET Global Tool (MCP)
+
+Install the MCP tools globally using the .NET CLI:
+
+```bash
+# Install CheckNugetPackages MCP Tool
+dotnet tool install --global CheckNugetPackages.DotNetMcpTool
+
+# Install CheckNpmPackages MCP Tool
+dotnet tool install --global CheckNpmPackages.DotNetMcpTool
+```
+
+Or visit the NuGet package pages:
+- [CheckNugetPackages.DotNetMcpTool](https://www.nuget.org/packages/CheckNugetPackages.DotNetMcpTool)
+- [CheckNpmPackages.DotNetMcpTool](https://www.nuget.org/packages/CheckNpmPackages.DotNetMcpTool)
+
 ### Update Existing Installation
 
 ```bash
@@ -33,6 +56,12 @@ dotnet tool update --global CheckNugetPackages.DotNetCliTool
 
 # Update CheckNpmPackages
 dotnet tool update --global CheckNpmPackages.DotNetCliTool
+
+# Update CheckNugetPackages MCP Tool
+dotnet tool update --global CheckNugetPackages.DotNetMcpTool
+
+# Update CheckNpmPackages MCP Tool
+dotnet tool update --global CheckNpmPackages.DotNetMcpTool
 ```
 
 ### Uninstall
@@ -43,6 +72,12 @@ dotnet tool uninstall --global CheckNugetPackages.DotNetCliTool
 
 # Uninstall CheckNpmPackages
 dotnet tool uninstall --global CheckNpmPackages.DotNetCliTool
+
+# Uninstall CheckNugetPackages MCP Tool
+dotnet tool uninstall --global CheckNugetPackages.DotNetMcpTool
+
+# Uninstall CheckNpmPackages MCP Tool
+dotnet tool uninstall --global CheckNpmPackages.DotNetMcpTool
 ```
 
 ## Usage
@@ -155,6 +190,7 @@ CheckNpmPackages [directories...] [options]
   - Valid values: `csv`, `html`, `md`
   - Can specify multiple types separated by spaces
 - `--report-directory <path>` - Directory where reports will be saved (default: current directory)
+- `--package-lock-scan` - When specified, scans `package-lock.json` files for all direct and transitive dependencies instead of only scanning `package.json` files. This provides a more complete view of all resolved packages, including nested dependencies.
 
 #### Examples
 
@@ -170,6 +206,12 @@ CheckNpmPackages "C:\MyProject" --report-directory "C:\Reports"
 
 # Scan multiple directories
 CheckNpmPackages "C:\Project1\ClientApp" "C:\Project2\ClientApp" --report-directory "npm-reports"
+
+# Scan package-lock.json for all direct and transitive dependencies
+CheckNpmPackages "C:\MyProject\ClientApp" --package-lock-scan
+
+# Combine package-lock scan with other options
+CheckNpmPackages "C:\MyProject" --package-lock-scan --report-type csv html --report-directory "C:\Reports"
 ```
 
 #### Output Files
@@ -184,6 +226,68 @@ CheckNpmPackages "C:\Project1\ClientApp" "C:\Project2\ClientApp" --report-direct
 - Automatically skips `node_modules` directories
 - Ignores local file dependencies (starting with `file:`)
 - Generates links to npmjs.com package pages
+- Supports `package-lock.json` scanning for complete transitive dependency analysis
+
+## MCP Tools
+
+The MCP (Model Context Protocol) tools provide the same functionality as the CLI tools but are designed to be used as MCP servers, enabling integration with AI assistants and other MCP-compatible clients.
+
+### CheckNugetPackages MCP Tool
+
+The `CheckNugetPackages.DotNetMcpTool` exposes a `CheckNugetPackages` MCP tool that scans directories for NuGet package dependencies and generates reports.
+
+**Tool Name:** `CheckNugetPackages`
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `directories` | `string[]` | No | One or more directory paths to scan for NuGet packages. If not provided, scans current directory. |
+| `reportTypes` | `string[]` | No | Report types to generate (valid values: `csv`, `html`, `md`). If not provided, generates CSV, HTML, and Markdown reports. |
+| `reportDirectory` | `string` | No | Directory where reports will be saved. If not provided, saves to current directory. |
+
+#### MCP Configuration Example
+
+To configure the CheckNugetPackages MCP tool in your MCP client (e.g., VS Code), add the following to your MCP settings:
+
+```json
+{
+  "servers": {
+    "CheckNugetPackages": {
+      "type": "stdio",
+      "command": "CheckNugetPackagesMcp"
+    }
+  }
+}
+```
+
+### CheckNpmPackages MCP Tool
+
+The `CheckNpmPackages.DotNetMcpTool` exposes a `CheckNpmPackages` MCP tool that scans directories for npm package dependencies and generates reports.
+
+**Tool Name:** `CheckNpmPackages`
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `directories` | `string[]` | No | One or more directory paths to scan for npm packages. If not provided, scans current directory. |
+| `reportTypes` | `string[]` | No | Report types to generate (valid values: `csv`, `html`, `md`). If not provided, generates CSV, HTML, and Markdown reports. |
+| `reportDirectory` | `string` | No | Directory where reports will be saved. If not provided, saves to current directory. |
+| `packageLockScan` | `bool` | No | When `true`, scans `package-lock.json` for all direct and transitive dependencies instead of only scanning `package.json`. Defaults to `false`. |
+
+#### MCP Configuration Example
+
+To configure the CheckNpmPackages MCP tool in your MCP client (e.g., VS Code), add the following to your MCP settings:
+
+```json
+{
+  "servers": {
+    "CheckNpmPackages": {
+      "type": "stdio",
+      "command": "CheckNpmPackagesMcp"
+    }
+  }
+}
+```
 
 ## Use Cases
 
@@ -245,5 +349,8 @@ This project is licensed under the terms specified in the LICENSE file.
 - [Report Issues](https://github.com/phongnguyend/CheckDependencies/issues)
 - [CheckNugetPackages.DotNetCliTool on NuGet](https://www.nuget.org/packages/CheckNugetPackages.DotNetCliTool)
 - [CheckNpmPackages.DotNetCliTool on NuGet](https://www.nuget.org/packages/CheckNpmPackages.DotNetCliTool)
+- [CheckNugetPackages.DotNetMcpTool on NuGet](https://www.nuget.org/packages/CheckNugetPackages.DotNetMcpTool)
+- [CheckNpmPackages.DotNetMcpTool on NuGet](https://www.nuget.org/packages/CheckNpmPackages.DotNetMcpTool)
+- [Model Context Protocol](https://modelcontextprotocol.io/)
 - [NuGet Package Version Reference | Microsoft Learn](https://learn.microsoft.com/en-us/nuget/concepts/package-versioning?tabs=semver20sort)
 - [Central Package Management | Microsoft Learn](https://learn.microsoft.com/en-us/nuget/consume-packages/central-package-management)

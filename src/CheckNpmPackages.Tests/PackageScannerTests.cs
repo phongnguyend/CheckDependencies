@@ -28,6 +28,25 @@ public class PackageScannerTests
     }
 
     [Fact]
+    public async Task RunAsync_Samples_ReactJs_PackageLockScan()
+    {
+        var samplePath = Path.Combine(_samplesDir, "reactjs");
+
+        var arguments = new ParsedArguments(
+            [samplePath],
+            ["csv", "html", "md"],
+            samplePath,
+            true
+        );
+
+        await PackageScanner.RunAsync(arguments);
+
+        Assert.True(File.Exists(Path.Combine(samplePath, "packages.csv")), "CSV report not generated");
+        Assert.True(File.Exists(Path.Combine(samplePath, "packages.html")), "HTML report not generated");
+        Assert.True(File.Exists(Path.Combine(samplePath, "packages.md")), "Markdown report not generated");
+    }
+
+    [Fact]
     public async Task RunAsync_Samples_VueJs()
     {
         var samplePath = Path.Combine(_samplesDir, "vuejs");
@@ -36,6 +55,25 @@ public class PackageScannerTests
             [samplePath],
             ["csv", "html", "md"],
             samplePath
+        );
+
+        await PackageScanner.RunAsync(arguments);
+
+        Assert.True(File.Exists(Path.Combine(samplePath, "packages.csv")), "CSV report not generated");
+        Assert.True(File.Exists(Path.Combine(samplePath, "packages.html")), "HTML report not generated");
+        Assert.True(File.Exists(Path.Combine(samplePath, "packages.md")), "Markdown report not generated");
+    }
+
+    [Fact]
+    public async Task RunAsync_Samples_VueJs_PackageLockScan()
+    {
+        var samplePath = Path.Combine(_samplesDir, "vuejs");
+
+        var arguments = new ParsedArguments(
+            [samplePath],
+            ["csv", "html", "md"],
+            samplePath,
+            true
         );
 
         await PackageScanner.RunAsync(arguments);
@@ -64,6 +102,25 @@ public class PackageScannerTests
     }
 
     [Fact]
+    public async Task RunAsync_Samples_Angular_PackageLockScan()
+    {
+        var samplePath = Path.Combine(_samplesDir, "angular");
+
+        var arguments = new ParsedArguments(
+            [samplePath],
+            ["csv", "html", "md"],
+            samplePath,
+            true
+        );
+
+        await PackageScanner.RunAsync(arguments);
+
+        Assert.True(File.Exists(Path.Combine(samplePath, "packages.csv")), "CSV report not generated");
+        Assert.True(File.Exists(Path.Combine(samplePath, "packages.html")), "HTML report not generated");
+        Assert.True(File.Exists(Path.Combine(samplePath, "packages.md")), "Markdown report not generated");
+    }
+
+    [Fact]
     public async Task RunAsync_Samples_NextJs()
     {
         var samplePath = Path.Combine(_samplesDir, "nextjs");
@@ -72,6 +129,25 @@ public class PackageScannerTests
             [samplePath],
             ["csv", "html", "md"],
             samplePath
+        );
+
+        await PackageScanner.RunAsync(arguments);
+
+        Assert.True(File.Exists(Path.Combine(samplePath, "packages.csv")), "CSV report not generated");
+        Assert.True(File.Exists(Path.Combine(samplePath, "packages.html")), "HTML report not generated");
+        Assert.True(File.Exists(Path.Combine(samplePath, "packages.md")), "Markdown report not generated");
+    }
+
+    [Fact]
+    public async Task RunAsync_Samples_NextJs_PackageLockScan()
+    {
+        var samplePath = Path.Combine(_samplesDir, "nextjs");
+
+        var arguments = new ParsedArguments(
+            [samplePath],
+            ["csv", "html", "md"],
+            samplePath,
+            true
         );
 
         await PackageScanner.RunAsync(arguments);
