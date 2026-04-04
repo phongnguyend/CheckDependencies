@@ -1,0 +1,3 @@
+dotnet tool install CheckNpmPackages.DotNetMcpTool --global --add-source ./nupkg
+
+dotnet tool uninstall CheckNpmPackages.DotNetMcpTool --global
