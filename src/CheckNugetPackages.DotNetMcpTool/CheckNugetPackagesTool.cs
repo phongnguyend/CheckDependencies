@@ -13,12 +13,15 @@ public class CheckNugetPackagesTool
         [Description("Report types to generate (valid values: csv, html, md). If not provided, generates CSV, HTML, and Markdown reports.")] 
         string[]? reportTypes = null,
         [Description("Directory where reports will be saved. If not provided, saves to current directory.")] 
-        string? reportDirectory = null)
+        string? reportDirectory = null,
+        [Description("When true, scans project.assets.json for all direct and transitive dependencies instead of only scanning .csproj files.")] 
+        bool includeTransitive = false)
     {
         var parsedArgs = new ParsedArguments(
             Directories: directories?.ToList() ?? [Directory.GetCurrentDirectory()],
             ReportTypes: reportTypes?.ToList() ?? ["csv", "html", "md"],
-            ReportDirectory: reportDirectory
+            ReportDirectory: reportDirectory,
+            IncludeTransitive: includeTransitive
         );
         
         await PackageScanner.RunAsync(parsedArgs);

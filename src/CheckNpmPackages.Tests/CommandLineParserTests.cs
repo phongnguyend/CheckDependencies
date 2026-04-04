@@ -205,4 +205,34 @@ public class CommandLineParserTests
         Assert.Contains("csv", result.ReportTypes);
         Assert.Contains("html", result.ReportTypes);
     }
+
+    [Fact]
+    public void ParseParameters_IncludeTransitive_DefaultsFalse()
+    {
+        var result = CommandLineParser.ParseParameters([]);
+
+        Assert.False(result.IncludeTransitive);
+    }
+
+    [Fact]
+    public void ParseParameters_IncludeTransitive_SetToTrue()
+    {
+        var result = CommandLineParser.ParseParameters(["--include-transitive"]);
+
+        Assert.True(result.IncludeTransitive);
+    }
+
+    [Fact]
+    public void ParseParameters_IncludeTransitive_WithOtherOptions()
+    {
+        var result = CommandLineParser.ParseParameters(
+            ["C:\\Projects", "--include-transitive", "--report-type", "csv", "--report-directory", "C:\\Output"]);
+
+        Assert.True(result.IncludeTransitive);
+        Assert.Single(result.Directories);
+        Assert.Equal("C:\\Projects", result.Directories[0]);
+        Assert.Single(result.ReportTypes);
+        Assert.Contains("csv", result.ReportTypes);
+        Assert.Equal("C:\\Output", result.ReportDirectory);
+    }
 }

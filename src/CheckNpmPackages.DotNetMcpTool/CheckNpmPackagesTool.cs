@@ -15,13 +15,13 @@ public class CheckNpmPackagesTool
         [Description("Directory where reports will be saved. If not provided, saves to current directory.")] 
         string? reportDirectory = null,
         [Description("When true, scans package-lock.json for all direct and transitive dependencies instead of only scanning package.json.")] 
-        bool packageLockScan = false)
+        bool includeTransitive = false)
     {
         var parsedArgs = new ParsedArguments(
             Directories: directories?.ToList() ?? [Directory.GetCurrentDirectory()],
             ReportTypes: reportTypes?.ToList() ?? ["csv", "html", "md"],
             ReportDirectory: reportDirectory,
-            PackageLockScan: packageLockScan
+            IncludeTransitive: includeTransitive
         );
         
         await PackageScanner.RunAsync(parsedArgs);

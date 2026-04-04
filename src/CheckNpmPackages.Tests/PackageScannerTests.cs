@@ -28,7 +28,7 @@ public class PackageScannerTests
     }
 
     [Fact]
-    public async Task RunAsync_Samples_ReactJs_PackageLockScan()
+    public async Task RunAsync_Samples_ReactJs_IncludeTransitive()
     {
         var samplePath = Path.Combine(_samplesDir, "reactjs");
 
@@ -65,7 +65,7 @@ public class PackageScannerTests
     }
 
     [Fact]
-    public async Task RunAsync_Samples_VueJs_PackageLockScan()
+    public async Task RunAsync_Samples_VueJs_IncludeTransitive()
     {
         var samplePath = Path.Combine(_samplesDir, "vuejs");
 
@@ -102,7 +102,7 @@ public class PackageScannerTests
     }
 
     [Fact]
-    public async Task RunAsync_Samples_Angular_PackageLockScan()
+    public async Task RunAsync_Samples_Angular_IncludeTransitive()
     {
         var samplePath = Path.Combine(_samplesDir, "angular");
 
@@ -139,7 +139,7 @@ public class PackageScannerTests
     }
 
     [Fact]
-    public async Task RunAsync_Samples_NextJs_PackageLockScan()
+    public async Task RunAsync_Samples_NextJs_IncludeTransitive()
     {
         var samplePath = Path.Combine(_samplesDir, "nextjs");
 

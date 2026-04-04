@@ -1,6 +1,6 @@
 namespace CheckNpmPackages;
 
-public record ParsedArguments(List<string> Directories, List<string> ReportTypes, string? ReportDirectory, bool PackageLockScan = false);
+public record ParsedArguments(List<string> Directories, List<string> ReportTypes, string? ReportDirectory, bool IncludeTransitive = false);
 
 public static class CommandLineParser
 {
@@ -9,7 +9,7 @@ public static class CommandLineParser
         var directories = new List<string>();
         var reportTypes = new List<string>();
         string? reportDirectory = null;
-        bool packageLockScan = false;
+        bool includeTransitive = false;
 
         // Default directories if no arguments provided
         var defaultDirectories = new List<string>
@@ -79,9 +79,9 @@ public static class CommandLineParser
                     Console.WriteLine("Warning: --report-directory parameter requires a value.");
                 }
             }
-            else if (param == "--package-lock-scan")
+            else if (param == "--include-transitive")
             {
-                packageLockScan = true;
+                includeTransitive = true;
                 i++;
             }
             else
@@ -97,6 +97,6 @@ public static class CommandLineParser
             reportTypes.AddRange(defaultReportTypes);
         }
 
-        return new ParsedArguments(directories, reportTypes, reportDirectory, packageLockScan);
+        return new ParsedArguments(directories, reportTypes, reportDirectory, includeTransitive);
     }
 }

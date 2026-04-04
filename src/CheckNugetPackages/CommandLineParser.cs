@@ -1,6 +1,6 @@
 namespace CheckNugetPackages;
 
-public record ParsedArguments(List<string> Directories, List<string> ReportTypes, string? ReportDirectory);
+public record ParsedArguments(List<string> Directories, List<string> ReportTypes, string? ReportDirectory, bool IncludeTransitive = false);
 
 public static class CommandLineParser
 {
@@ -9,6 +9,7 @@ public static class CommandLineParser
         var directories = new List<string>();
         var reportTypes = new List<string>();
         string? reportDirectory = null;
+        bool includeTransitive = false;
 
         // Default directories if no arguments provided
         var defaultDirectories = new List<string>
@@ -78,6 +79,11 @@ public static class CommandLineParser
                     Console.WriteLine("Warning: --report-directory parameter requires a value.");
                 }
             }
+            else if (param == "--include-transitive")
+            {
+                includeTransitive = true;
+                i++;
+            }
             else
             {
                 Console.WriteLine($"Warning: Unknown parameter '{param}' ignored.");
@@ -91,6 +97,6 @@ public static class CommandLineParser
             reportTypes.AddRange(defaultReportTypes);
         }
 
-        return new ParsedArguments(directories, reportTypes, reportDirectory);
+        return new ParsedArguments(directories, reportTypes, reportDirectory, includeTransitive);
     }
 }

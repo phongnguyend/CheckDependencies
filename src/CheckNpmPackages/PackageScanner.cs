@@ -10,7 +10,7 @@ public class PackageScanner
 
         foreach (var directory in arguments.Directories)
         {
-            var scannedPackages = arguments.PackageLockScan
+            var scannedPackages = arguments.IncludeTransitive
                 ? ScanPackagesWithLockFileScan(directory)
                 : ScanPackagesInPackageJsonFiles(directory);
             packages.AddRange(scannedPackages);

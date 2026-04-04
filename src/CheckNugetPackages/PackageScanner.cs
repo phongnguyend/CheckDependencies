@@ -12,7 +12,7 @@ public class PackageScanner
         foreach (var directory in arguments.Directories)
         {
             var packagesInPackagesConfigureFiles = ScanPackagesInPackagesConfigureFiles(directory);
-            var packagesInCsProjectFiles = ScanPackagesInCsProjectFiles(directory);
+            var packagesInCsProjectFiles = ScanPackagesInCsProjectFiles(directory, arguments.IncludeTransitive);
             packages.AddRange(packagesInPackagesConfigureFiles);
             packages.AddRange(packagesInCsProjectFiles);
         }
@@ -106,7 +106,7 @@ public class PackageScanner
             return packages;
         }
 
-        static List<(string Name, string Version, string Project)> ScanPackagesInCsProjectFiles(string directory)
+        static List<(string Name, string Version, string Project)> ScanPackagesInCsProjectFiles(string directory, bool includeTransitive)
         {
             var files = Directory.EnumerateFiles(directory, "*.csproj", SearchOption.AllDirectories);
             var packages = new List<(string Name, string Version, string Project)>();
@@ -114,6 +114,26 @@ public class PackageScanner
             foreach (var file in files)
             {
                 var projectName = new DirectoryInfo(Path.GetDirectoryName(file)).Name;
+
+                if (includeTransitive)
+                {
+                    var assetsPath = Path.Combine(Path.GetDirectoryName(file), "obj", "project.assets.json");
+                    if (File.Exists(assetsPath))
+                    {
+                        // Scan all direct and transitive packages from project.assets.json
+                        var allPackagesMap = LoadProjectAssetsVersionMap(file);
+                        foreach (var kvp in allPackagesMap)
+                        {
+                            foreach (var version in kvp.Value)
+                            {
+                                packages.Add((kvp.Key, version, projectName));
+                            }
+                        }
+                        continue; // Skip csproj scan for this project
+                    }
+                }
+
+                // Scan csproj as normal
                 XDocument xdoc = XDocument.Load(file);
                 var ItemGroupNodes = xdoc.Descendants("ItemGroup");
 

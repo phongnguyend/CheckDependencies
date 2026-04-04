@@ -110,6 +110,7 @@ CheckNugetPackages [directories...] [options]
   - Valid values: `csv`, `html`, `md`
   - Can specify multiple types separated by spaces
 - `--report-directory <path>` - Directory where reports will be saved (default: current directory)
+- `--include-transitive` - When specified, scans `project.assets.json` files for all direct and transitive dependencies instead of only scanning `.csproj` files. If `project.assets.json` does not exist for a project, it falls back to scanning the `.csproj` file as normal.
 
 #### Examples
 
@@ -131,6 +132,12 @@ CheckNugetPackages "C:\Project1" "C:\Project2" --report-type csv html md --repor
 
 # Generate CSV report in a specific directory
 CheckNugetPackages "C:\MyProject\API" "C:\MyProject\Services" --report-type csv --report-directory "reports"
+
+# Scan project.assets.json for all direct and transitive dependencies
+CheckNugetPackages "C:\MyProject" --include-transitive
+
+# Combine transitive scan with other options
+CheckNugetPackages "C:\MyProject" --include-transitive --report-type csv html --report-directory "C:\Reports"
 ```
 
 #### Output Files
@@ -190,7 +197,7 @@ CheckNpmPackages [directories...] [options]
   - Valid values: `csv`, `html`, `md`
   - Can specify multiple types separated by spaces
 - `--report-directory <path>` - Directory where reports will be saved (default: current directory)
-- `--package-lock-scan` - When specified, scans `package-lock.json` files for all direct and transitive dependencies instead of only scanning `package.json` files. This provides a more complete view of all resolved packages, including nested dependencies.
+- `--include-transitive` - When specified, scans `package-lock.json` files for all direct and transitive dependencies instead of only scanning `package.json` files. This provides a more complete view of all resolved packages, including nested dependencies.
 
 #### Examples
 
@@ -208,10 +215,10 @@ CheckNpmPackages "C:\MyProject" --report-directory "C:\Reports"
 CheckNpmPackages "C:\Project1\ClientApp" "C:\Project2\ClientApp" --report-directory "npm-reports"
 
 # Scan package-lock.json for all direct and transitive dependencies
-CheckNpmPackages "C:\MyProject\ClientApp" --package-lock-scan
+CheckNpmPackages "C:\MyProject\ClientApp" --include-transitive
 
-# Combine package-lock scan with other options
-CheckNpmPackages "C:\MyProject" --package-lock-scan --report-type csv html --report-directory "C:\Reports"
+# Combine transitive scan with other options
+CheckNpmPackages "C:\MyProject" --include-transitive --report-type csv html --report-directory "C:\Reports"
 ```
 
 #### Output Files
@@ -244,6 +251,7 @@ The `CheckNugetPackages.DotNetMcpTool` exposes a `CheckNugetPackages` MCP tool t
 | `directories` | `string[]` | No | One or more directory paths to scan for NuGet packages. If not provided, scans current directory. |
 | `reportTypes` | `string[]` | No | Report types to generate (valid values: `csv`, `html`, `md`). If not provided, generates CSV, HTML, and Markdown reports. |
 | `reportDirectory` | `string` | No | Directory where reports will be saved. If not provided, saves to current directory. |
+| `includeTransitive` | `bool` | No | When `true`, scans `project.assets.json` for all direct and transitive dependencies instead of only scanning `.csproj` files. Defaults to `false`. |
 
 #### MCP Configuration Example
 
@@ -272,7 +280,7 @@ The `CheckNpmPackages.DotNetMcpTool` exposes a `CheckNpmPackages` MCP tool that 
 | `directories` | `string[]` | No | One or more directory paths to scan for npm packages. If not provided, scans current directory. |
 | `reportTypes` | `string[]` | No | Report types to generate (valid values: `csv`, `html`, `md`). If not provided, generates CSV, HTML, and Markdown reports. |
 | `reportDirectory` | `string` | No | Directory where reports will be saved. If not provided, saves to current directory. |
-| `packageLockScan` | `bool` | No | When `true`, scans `package-lock.json` for all direct and transitive dependencies instead of only scanning `package.json`. Defaults to `false`. |
+| `includeTransitive` | `bool` | No | When `true`, scans `package-lock.json` for all direct and transitive dependencies instead of only scanning `package.json`. Defaults to `false`. |
 
 #### MCP Configuration Example
 
