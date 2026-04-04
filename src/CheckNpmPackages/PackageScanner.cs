@@ -18,7 +18,7 @@ public class PackageScanner
 
         // Fetch license information from npm registry
         Console.WriteLine("Fetching license information from npm registry...");
-        var packageInfoMap = await NpmPackgeResolver.GetLicensesAsync(
+        var packageInfoMap = await NpmPackgeResolver.GetPackagesInfoAsync(
             packages.Select(p => (p.Name, p.Version, p.ResolvedVersion)).Distinct());
         Console.WriteLine("License information fetched.");
 

@@ -3,14 +3,14 @@ namespace CheckNugetPackages.Tests;
 public class NugetPackageResolverTests
 {
     [Fact]
-    public async Task GetLicensesAsync_KnownPackage_ReturnsLicenseAndPublishedDate()
+    public async Task GetPackagesInfoAsync_KnownPackage_ReturnsLicenseAndPublishedDate()
     {
         var packages = new List<(string Name, string Version)>
         {
             ("Newtonsoft.Json", "13.0.3"),
         };
 
-        var results = await NugetPackageResolver.GetLicensesAsync(packages);
+        var results = await NugetPackageResolver.GetPackagesInfoAsync(packages);
 
         Assert.Single(results);
         var info = results[("Newtonsoft.Json", "13.0.3")];
@@ -19,14 +19,14 @@ public class NugetPackageResolverTests
     }
 
     [Fact]
-    public async Task GetLicensesAsync_KnownPackage_ReturnsLatestVersionInfo()
+    public async Task GetPackagesInfoAsync_KnownPackage_ReturnsLatestVersionInfo()
     {
         var packages = new List<(string Name, string Version)>
         {
             ("Newtonsoft.Json", "13.0.3"),
         };
 
-        var results = await NugetPackageResolver.GetLicensesAsync(packages);
+        var results = await NugetPackageResolver.GetPackagesInfoAsync(packages);
 
         Assert.Single(results);
         var info = results[("Newtonsoft.Json", "13.0.3")];
@@ -36,14 +36,14 @@ public class NugetPackageResolverTests
     }
 
     [Fact]
-    public async Task GetLicensesAsync_NonExistentPackage_ReturnsNullInfo()
+    public async Task GetPackagesInfoAsync_NonExistentPackage_ReturnsNullInfo()
     {
         var packages = new List<(string Name, string Version)>
         {
             ("NonExistentPackage_XYZ_12345", "0.0.1"),
         };
 
-        var results = await NugetPackageResolver.GetLicensesAsync(packages);
+        var results = await NugetPackageResolver.GetPackagesInfoAsync(packages);
 
         Assert.Single(results);
         var info = results[("NonExistentPackage_XYZ_12345", "0.0.1")];
@@ -55,7 +55,7 @@ public class NugetPackageResolverTests
     }
 
     [Fact]
-    public async Task GetLicensesAsync_MultiplePackages_ReturnsAllResults()
+    public async Task GetPackagesInfoAsync_MultiplePackages_ReturnsAllResults()
     {
         var packages = new List<(string Name, string Version)>
         {
@@ -63,7 +63,7 @@ public class NugetPackageResolverTests
             ("Serilog", "4.0.0"),
         };
 
-        var results = await NugetPackageResolver.GetLicensesAsync(packages);
+        var results = await NugetPackageResolver.GetPackagesInfoAsync(packages);
 
         Assert.Equal(2, results.Count);
         Assert.NotNull(results[("Newtonsoft.Json", "13.0.3")].ResolvedVersion.License);
@@ -71,7 +71,7 @@ public class NugetPackageResolverTests
     }
 
     [Fact]
-    public async Task GetLicensesAsync_DuplicatePackages_ReturnsDistinctResults()
+    public async Task GetPackagesInfoAsync_DuplicatePackages_ReturnsDistinctResults()
     {
         var packages = new List<(string Name, string Version)>
         {
@@ -79,13 +79,13 @@ public class NugetPackageResolverTests
             ("Newtonsoft.Json", "13.0.3"),
         };
 
-        var results = await NugetPackageResolver.GetLicensesAsync(packages);
+        var results = await NugetPackageResolver.GetPackagesInfoAsync(packages);
 
         Assert.Single(results);
     }
 
     [Fact]
-    public async Task GetLicensesAsync_PackageWithLicenseUrl_ReturnsUrl()
+    public async Task GetPackagesInfoAsync_PackageWithLicenseUrl_ReturnsUrl()
     {
         // Castle.Core 4.4.0 uses licenseUrl (not licenseExpression)
         var packages = new List<(string Name, string Version)>
@@ -93,7 +93,7 @@ public class NugetPackageResolverTests
             ("Castle.Core", "4.4.0"),
         };
 
-        var results = await NugetPackageResolver.GetLicensesAsync(packages);
+        var results = await NugetPackageResolver.GetPackagesInfoAsync(packages);
 
         Assert.Single(results);
         var info = results[("Castle.Core", "4.4.0")];
@@ -101,14 +101,14 @@ public class NugetPackageResolverTests
     }
 
     [Fact]
-    public async Task GetLicensesAsync_PublishedDate_IsFormattedCorrectly()
+    public async Task GetPackagesInfoAsync_PublishedDate_IsFormattedCorrectly()
     {
         var packages = new List<(string Name, string Version)>
         {
             ("Newtonsoft.Json", "13.0.3"),
         };
 
-        var results = await NugetPackageResolver.GetLicensesAsync(packages);
+        var results = await NugetPackageResolver.GetPackagesInfoAsync(packages);
 
         var info = results[("Newtonsoft.Json", "13.0.3")];
         Assert.NotNull(info.ResolvedVersion.PublishedDate);
@@ -116,14 +116,14 @@ public class NugetPackageResolverTests
     }
 
     [Fact]
-    public async Task GetLicensesAsync_LatestPublishedDate_IsFormattedCorrectly()
+    public async Task GetPackagesInfoAsync_LatestPublishedDate_IsFormattedCorrectly()
     {
         var packages = new List<(string Name, string Version)>
         {
             ("Newtonsoft.Json", "13.0.3"),
         };
 
-        var results = await NugetPackageResolver.GetLicensesAsync(packages);
+        var results = await NugetPackageResolver.GetPackagesInfoAsync(packages);
 
         var info = results[("Newtonsoft.Json", "13.0.3")];
         Assert.NotNull(info.LatestVersion.PublishedDate);
@@ -131,14 +131,14 @@ public class NugetPackageResolverTests
     }
 
     [Fact]
-    public async Task GetLicensesAsync_EmptyInput_ReturnsEmptyDictionary()
+    public async Task GetPackagesInfoAsync_EmptyInput_ReturnsEmptyDictionary()
     {
-        var results = await NugetPackageResolver.GetLicensesAsync([]);
+        var results = await NugetPackageResolver.GetPackagesInfoAsync([]);
         Assert.Empty(results);
     }
 
     [Fact]
-    public async Task GetLicensesAsync_DeprecatedPackage_ReturnsDeprecatedInfo()
+    public async Task GetPackagesInfoAsync_DeprecatedPackage_ReturnsDeprecatedInfo()
     {
         // Microsoft.Azure.EventHubs is deprecated in favor of Azure.Messaging.EventHubs
         var packages = new List<(string Name, string Version)>
@@ -146,7 +146,7 @@ public class NugetPackageResolverTests
             ("Microsoft.Azure.EventHubs", "4.3.2"),
         };
 
-        var results = await NugetPackageResolver.GetLicensesAsync(packages);
+        var results = await NugetPackageResolver.GetPackagesInfoAsync(packages);
 
         Assert.Single(results);
         var info = results[("Microsoft.Azure.EventHubs", "4.3.2")];
@@ -154,7 +154,7 @@ public class NugetPackageResolverTests
     }
 
     [Fact]
-    public async Task GetLicensesAsync_VulnerablePackage_ReturnsVulnerabilityInfo()
+    public async Task GetPackagesInfoAsync_VulnerablePackage_ReturnsVulnerabilityInfo()
     {
         // System.Text.RegularExpressions 4.3.0 has known vulnerabilities
         var packages = new List<(string Name, string Version)>
@@ -162,7 +162,7 @@ public class NugetPackageResolverTests
             ("System.Text.RegularExpressions", "4.3.0"),
         };
 
-        var results = await NugetPackageResolver.GetLicensesAsync(packages);
+        var results = await NugetPackageResolver.GetPackagesInfoAsync(packages);
 
         Assert.Single(results);
         var info = results[("System.Text.RegularExpressions", "4.3.0")];
@@ -170,14 +170,14 @@ public class NugetPackageResolverTests
     }
 
     [Fact]
-    public async Task GetLicensesAsync_NonDeprecatedPackage_ReturnsNullDeprecated()
+    public async Task GetPackagesInfoAsync_NonDeprecatedPackage_ReturnsNullDeprecated()
     {
         var packages = new List<(string Name, string Version)>
         {
             ("Newtonsoft.Json", "13.0.3"),
         };
 
-        var results = await NugetPackageResolver.GetLicensesAsync(packages);
+        var results = await NugetPackageResolver.GetPackagesInfoAsync(packages);
 
         Assert.Single(results);
         var info = results[("Newtonsoft.Json", "13.0.3")];

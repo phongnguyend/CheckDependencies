@@ -23,14 +23,7 @@ public static class NpmPackgeResolver
 
     private static readonly ConcurrentDictionary<string, Task<JsonElement?>> PackageDocCache = new(StringComparer.OrdinalIgnoreCase);
 
-    public static async Task<Dictionary<(string Name, string Version), PackageInfo>> GetLicensesAsync(
-        IEnumerable<(string Name, string Version)> packages)
-    {
-        var result = await GetLicensesAsync(packages.Select(p => (p.Name, p.Version, (string?)null)));
-        return result.ToDictionary(kvp => (kvp.Key.Name, kvp.Key.Version), kvp => kvp.Value);
-    }
-
-    public static async Task<Dictionary<(string Name, string Version, string? ResolvedVersion), PackageInfo>> GetLicensesAsync(
+    public static async Task<Dictionary<(string Name, string Version, string? ResolvedVersion), PackageInfo>> GetPackagesInfoAsync(
         IEnumerable<(string Name, string Version, string? ResolvedVersion)> packages)
     {
         var distinct = packages.Distinct().ToList();

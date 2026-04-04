@@ -19,7 +19,7 @@ public class PackageScanner
 
         // Fetch license information from NuGet API
         Console.WriteLine("Fetching license information from NuGet API...");
-        var packageInfoMap = await NugetPackageResolver.GetLicensesAsync(
+        var packageInfoMap = await NugetPackageResolver.GetPackagesInfoAsync(
             packages.Select(p => (p.Name, p.Version)).Distinct());
         Console.WriteLine("License information fetched.");
 

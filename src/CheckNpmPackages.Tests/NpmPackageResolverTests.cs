@@ -3,50 +3,50 @@ namespace CheckNpmPackages.Tests;
 public class NpmPackageResolverTests
 {
     [Fact]
-    public async Task GetLicensesAsync_KnownPackage_ReturnsLicenseAndPublishedDate()
+    public async Task GetPackagesInfoAsync_KnownPackage_ReturnsLicenseAndPublishedDate()
     {
-        var packages = new List<(string Name, string Version)>
+        var packages = new List<(string Name, string Version, string? ResolvedVersion)>
         {
-            ("lodash", "4.17.21"),
+            ("lodash", "4.17.21", null),
         };
 
-        var results = await NpmPackgeResolver.GetLicensesAsync(packages);
+        var results = await NpmPackgeResolver.GetPackagesInfoAsync(packages);
 
         Assert.Single(results);
-        var info = results[("lodash", "4.17.21")];
+        var info = results[("lodash", "4.17.21", null)];
         Assert.Equal("MIT", info.ResolvedVersion.License);
         Assert.False(string.IsNullOrEmpty(info.ResolvedVersion.PublishedDate));
     }
 
     [Fact]
-    public async Task GetLicensesAsync_KnownPackage_ReturnsLatestVersionInfo()
+    public async Task GetPackagesInfoAsync_KnownPackage_ReturnsLatestVersionInfo()
     {
-        var packages = new List<(string Name, string Version)>
+        var packages = new List<(string Name, string Version, string? ResolvedVersion)>
         {
-            ("lodash", "4.17.21"),
+            ("lodash", "4.17.21", null),
         };
 
-        var results = await NpmPackgeResolver.GetLicensesAsync(packages);
+        var results = await NpmPackgeResolver.GetPackagesInfoAsync(packages);
 
         Assert.Single(results);
-        var info = results[("lodash", "4.17.21")];
+        var info = results[("lodash", "4.17.21", null)];
         Assert.NotNull(info.LatestVersion.Version);
         Assert.NotNull(info.LatestVersion.License);
         Assert.NotNull(info.LatestVersion.PublishedDate);
     }
 
     [Fact]
-    public async Task GetLicensesAsync_NonExistentPackage_ReturnsNullInfo()
+    public async Task GetPackagesInfoAsync_NonExistentPackage_ReturnsNullInfo()
     {
-        var packages = new List<(string Name, string Version)>
+        var packages = new List<(string Name, string Version, string? ResolvedVersion)>
         {
-            ("nonexistent-pkg-xyz-99999", "0.0.1"),
+            ("nonexistent-pkg-xyz-99999", "0.0.1", null),
         };
 
-        var results = await NpmPackgeResolver.GetLicensesAsync(packages);
+        var results = await NpmPackgeResolver.GetPackagesInfoAsync(packages);
 
         Assert.Single(results);
-        var info = results[("nonexistent-pkg-xyz-99999", "0.0.1")];
+        var info = results[("nonexistent-pkg-xyz-99999", "0.0.1", null)];
         Assert.Null(info.ResolvedVersion.License);
         Assert.Null(info.ResolvedVersion.PublishedDate);
         Assert.Null(info.LatestVersion.Version);
@@ -55,86 +55,86 @@ public class NpmPackageResolverTests
     }
 
     [Fact]
-    public async Task GetLicensesAsync_MultiplePackages_ReturnsAllResults()
+    public async Task GetPackagesInfoAsync_MultiplePackages_ReturnsAllResults()
     {
-        var packages = new List<(string Name, string Version)>
+        var packages = new List<(string Name, string Version, string? ResolvedVersion)>
         {
-            ("lodash", "4.17.21"),
-            ("express", "4.18.2"),
+            ("lodash", "4.17.21", null),
+            ("express", "4.18.2", null),
         };
 
-        var results = await NpmPackgeResolver.GetLicensesAsync(packages);
+        var results = await NpmPackgeResolver.GetPackagesInfoAsync(packages);
 
         Assert.Equal(2, results.Count);
-        Assert.NotNull(results[("lodash", "4.17.21")].ResolvedVersion.License);
-        Assert.NotNull(results[("express", "4.18.2")].ResolvedVersion.License);
+        Assert.NotNull(results[("lodash", "4.17.21", null)].ResolvedVersion.License);
+        Assert.NotNull(results[("express", "4.18.2", null)].ResolvedVersion.License);
     }
 
     [Fact]
-    public async Task GetLicensesAsync_DuplicatePackages_ReturnsDistinctResults()
+    public async Task GetPackagesInfoAsync_DuplicatePackages_ReturnsDistinctResults()
     {
-        var packages = new List<(string Name, string Version)>
+        var packages = new List<(string Name, string Version, string? ResolvedVersion)>
         {
-            ("lodash", "4.17.21"),
-            ("lodash", "4.17.21"),
+            ("lodash", "4.17.21", null),
+            ("lodash", "4.17.21", null),
         };
 
-        var results = await NpmPackgeResolver.GetLicensesAsync(packages);
+        var results = await NpmPackgeResolver.GetPackagesInfoAsync(packages);
 
         Assert.Single(results);
     }
 
     [Fact]
-    public async Task GetLicensesAsync_PublishedDate_IsFormattedCorrectly()
+    public async Task GetPackagesInfoAsync_PublishedDate_IsFormattedCorrectly()
     {
-        var packages = new List<(string Name, string Version)>
+        var packages = new List<(string Name, string Version, string? ResolvedVersion)>
         {
-            ("lodash", "4.17.21"),
+            ("lodash", "4.17.21", null),
         };
 
-        var results = await NpmPackgeResolver.GetLicensesAsync(packages);
+        var results = await NpmPackgeResolver.GetPackagesInfoAsync(packages);
 
-        var info = results[("lodash", "4.17.21")];
+        var info = results[("lodash", "4.17.21", null)];
         Assert.NotNull(info.ResolvedVersion.PublishedDate);
         Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", info.ResolvedVersion.PublishedDate);
     }
 
     [Fact]
-    public async Task GetLicensesAsync_LatestPublishedDate_IsFormattedCorrectly()
+    public async Task GetPackagesInfoAsync_LatestPublishedDate_IsFormattedCorrectly()
     {
-        var packages = new List<(string Name, string Version)>
+        var packages = new List<(string Name, string Version, string? ResolvedVersion)>
         {
-            ("lodash", "4.17.21"),
+            ("lodash", "4.17.21", null),
         };
 
-        var results = await NpmPackgeResolver.GetLicensesAsync(packages);
+        var results = await NpmPackgeResolver.GetPackagesInfoAsync(packages);
 
-        var info = results[("lodash", "4.17.21")];
+        var info = results[("lodash", "4.17.21", null)];
         Assert.NotNull(info.LatestVersion.PublishedDate);
         Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", info.LatestVersion.PublishedDate);
     }
 
     [Fact]
-    public async Task GetLicensesAsync_EmptyInput_ReturnsEmptyDictionary()
+    public async Task GetPackagesInfoAsync_EmptyInput_ReturnsEmptyDictionary()
     {
-        var packages = new List<(string Name, string Version)>();
-        var results = await NpmPackgeResolver.GetLicensesAsync(packages);
+        var packages = new List<(string Name, string Version, string? ResolvedVersion)>();
+        var results = await NpmPackgeResolver.GetPackagesInfoAsync(packages);
         Assert.Empty(results);
     }
 
     [Fact]
-    public async Task GetLicensesAsync_CaretRange_ResolvesToMatchingVersion()
+    public async Task GetPackagesInfoAsync_CaretRange_ResolvesToMatchingVersion()
     {
         // ^4.17.0 should resolve to the highest 4.x.x version >= 4.17.0
-        var packages = new List<(string Name, string Version)>
+        var packages = new List<(string Name, string Version, string? ResolvedVersion)>
         {
-            ("lodash", "^4.17.0"),
+            ("lodash", "^4.17.0", null),
         };
 
-        var results = await NpmPackgeResolver.GetLicensesAsync(packages);
+        var results = await NpmPackgeResolver.GetPackagesInfoAsync(packages);
 
         Assert.Single(results);
-        var info = results[("lodash", "^4.17.0")];
+        var info = results[("lodash", "^4.17.0", null)];
         Assert.NotNull(info.ResolvedVersion.Version);
         Assert.StartsWith("4.", info.ResolvedVersion.Version);
         Assert.NotNull(info.ResolvedVersion.License);
@@ -142,18 +142,18 @@ public class NpmPackageResolverTests
     }
 
     [Fact]
-    public async Task GetLicensesAsync_TildeRange_ResolvesToMatchingVersion()
+    public async Task GetPackagesInfoAsync_TildeRange_ResolvesToMatchingVersion()
     {
         // ~4.17.0 should resolve to the highest 4.17.x version
-        var packages = new List<(string Name, string Version)>
+        var packages = new List<(string Name, string Version, string? ResolvedVersion)>
         {
-            ("lodash", "~4.17.0"),
+            ("lodash", "~4.17.0", null),
         };
 
-        var results = await NpmPackgeResolver.GetLicensesAsync(packages);
+        var results = await NpmPackgeResolver.GetPackagesInfoAsync(packages);
 
         Assert.Single(results);
-        var info = results[("lodash", "~4.17.0")];
+        var info = results[("lodash", "~4.17.0", null)];
         Assert.NotNull(info.ResolvedVersion.Version);
         Assert.StartsWith("4.17.", info.ResolvedVersion.Version);
         Assert.NotNull(info.ResolvedVersion.License);
@@ -365,49 +365,49 @@ public class NpmPackageResolverTests
     }
 
     [Fact]
-    public async Task GetLicensesAsync_DeprecatedPackage_ReturnsDeprecatedInfo()
+    public async Task GetPackagesInfoAsync_DeprecatedPackage_ReturnsDeprecatedInfo()
     {
         // "request" is a well-known deprecated npm package
-        var packages = new List<(string Name, string Version)>
+        var packages = new List<(string Name, string Version, string? ResolvedVersion)>
         {
-            ("request", "2.88.2"),
+            ("request", "2.88.2", null),
         };
 
-        var results = await NpmPackgeResolver.GetLicensesAsync(packages);
+        var results = await NpmPackgeResolver.GetPackagesInfoAsync(packages);
 
         Assert.Single(results);
-        var info = results[("request", "2.88.2")];
+        var info = results[("request", "2.88.2", null)];
         Assert.NotNull(info.ResolvedVersion.Deprecated);
     }
 
     [Fact]
-    public async Task GetLicensesAsync_NonDeprecatedPackage_ReturnsNullDeprecated()
+    public async Task GetPackagesInfoAsync_NonDeprecatedPackage_ReturnsNullDeprecated()
     {
-        var packages = new List<(string Name, string Version)>
+        var packages = new List<(string Name, string Version, string? ResolvedVersion)>
         {
-            ("lodash", "4.17.21"),
+            ("lodash", "4.17.21", null),
         };
 
-        var results = await NpmPackgeResolver.GetLicensesAsync(packages);
+        var results = await NpmPackgeResolver.GetPackagesInfoAsync(packages);
 
         Assert.Single(results);
-        var info = results[("lodash", "4.17.21")];
+        var info = results[("lodash", "4.17.21", null)];
         Assert.Null(info.ResolvedVersion.Deprecated);
     }
 
     [Fact]
-    public async Task GetLicensesAsync_VulnerablePackage_ReturnsVulnerabilityInfo()
+    public async Task GetPackagesInfoAsync_VulnerablePackage_ReturnsVulnerabilityInfo()
     {
         // lodash 4.17.20 has known vulnerabilities (prototype pollution)
-        var packages = new List<(string Name, string Version)>
+        var packages = new List<(string Name, string Version, string? ResolvedVersion)>
         {
-            ("lodash", "4.17.20"),
+            ("lodash", "4.17.20", null),
         };
 
-        var results = await NpmPackgeResolver.GetLicensesAsync(packages);
+        var results = await NpmPackgeResolver.GetPackagesInfoAsync(packages);
 
         Assert.Single(results);
-        var info = results[("lodash", "4.17.20")];
+        var info = results[("lodash", "4.17.20", null)];
         Assert.NotNull(info.ResolvedVersion.Vulnerabilities);
     }
 }

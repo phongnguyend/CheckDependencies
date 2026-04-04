@@ -22,7 +22,7 @@ public static class NugetPackageResolver
 
     private static readonly ConcurrentDictionary<string, Task<RegistrationIndex?>> RegistrationCache = new(StringComparer.OrdinalIgnoreCase);
 
-    public static async Task<Dictionary<(string Name, string Version), PackageInfo>> GetLicensesAsync(
+    public static async Task<Dictionary<(string Name, string Version), PackageInfo>> GetPackagesInfoAsync(
         IEnumerable<(string Name, string Version)> packages)
     {
         var distinct = packages.Distinct().ToList();
