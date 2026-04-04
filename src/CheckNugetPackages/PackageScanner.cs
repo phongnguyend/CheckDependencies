@@ -117,7 +117,7 @@ public class PackageScanner
                 XDocument xdoc = XDocument.Load(file);
                 var ItemGroupNodes = xdoc.Descendants("ItemGroup");
 
-                Dictionary<string, string>? assetsVersionMap = null;
+                Dictionary<string, List<string>>? assetsVersionMap = null;
 
                 foreach (var ItemGroupNode in ItemGroupNodes)
                 {
@@ -134,7 +134,19 @@ public class PackageScanner
                         if (string.IsNullOrWhiteSpace(packageVersion))
                         {
                             assetsVersionMap ??= LoadProjectAssetsVersionMap(file);
-                            assetsVersionMap.TryGetValue(packageName, out packageVersion);
+                            if (assetsVersionMap.TryGetValue(packageName, out var versions))
+                            {
+                                foreach (var version in versions)
+                                {
+                                    packages.Add((packageName, version, projectName));
+                                }
+                            }
+                            else
+                            {
+                                packages.Add((packageName, packageVersion, projectName));
+                            }
+
+                            continue;
                         }
 
                         packages.Add((packageName, packageVersion, projectName));
@@ -147,9 +159,9 @@ public class PackageScanner
         }
     }
 
-    internal static Dictionary<string, string> LoadProjectAssetsVersionMap(string csprojFilePath)
+    internal static Dictionary<string, List<string>> LoadProjectAssetsVersionMap(string csprojFilePath)
     {
-        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var map = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
         var projectDir = Path.GetDirectoryName(csprojFilePath);
         var assetsPath = Path.Combine(projectDir, "obj", "project.assets.json");
@@ -172,11 +184,18 @@ public class PackageScanner
                         var name = package.Name[..slashIndex];
                         var version = package.Name[(slashIndex + 1)..];
 
-                        map.TryAdd(name, version);
+                        if (!map.TryGetValue(name, out var versions))
+                        {
+                            versions = [];
+                            map[name] = versions;
+                        }
+
+                        if (!versions.Contains(version))
+                        {
+                            versions.Add(version);
+                        }
                     }
                 }
-
-                break;
             }
         }
 
