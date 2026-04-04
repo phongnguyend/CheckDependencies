@@ -32,15 +32,17 @@ public class CheckNpmPackagesTool
         [Description("The npm package name (e.g. lodash)")] string packageName,
         [Description("The package version or version range (e.g. 4.17.21 or ^4.17.0)")] string version)
     {
-        var info = await NpmPackgeResolver.GetPackageInfoAsync(packageName, version);
-        return info.ResolvedVersion;
+        var key = (packageName, version, (string?)null);
+        var results = await NpmPackgeResolver.GetPackagesInfoAsync([key]);
+        return results.TryGetValue(key, out var info) ? info.ResolvedVersion : new VersionEntry(null, null, null, null, null, null);
     }
 
     [McpServerTool(Name = "GetNpmPackageLatestVersion"), Description("Get information about the latest version of an npm package, including license, published date, deprecation and vulnerability status")]
     public static async Task<VersionEntry> GetLatestVersionAsync(
         [Description("The npm package name (e.g. lodash)")] string packageName)
     {
-        var info = await NpmPackgeResolver.GetPackageInfoAsync(packageName, null);
-        return info.LatestVersion;
+        var key = (packageName, (string?)null, (string?)null);
+        var results = await NpmPackgeResolver.GetPackagesInfoAsync([key]);
+        return results.TryGetValue(key, out var info) ? info.LatestVersion : new VersionEntry(null, null, null, null, null, null);
     }
 }
