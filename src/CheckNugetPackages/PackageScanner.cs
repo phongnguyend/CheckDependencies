@@ -55,7 +55,20 @@ public class PackageScanner
 
         static List<(string Name, string Version, string Project)> ScanPackagesInPackagesConfigureFiles(string directory)
         {
-            var files = Directory.EnumerateFiles(directory, "packages.config", SearchOption.AllDirectories);
+            IEnumerable<string> files;
+
+            if (File.Exists(directory))
+            {
+                if (!Path.GetFileName(directory).Equals("packages.config", StringComparison.OrdinalIgnoreCase))
+                    return [];
+
+                files = [directory];
+            }
+            else
+            {
+                files = Directory.EnumerateFiles(directory, "packages.config", SearchOption.AllDirectories);
+            }
+
             var packages = new List<(string Name, string Version, string Project)>();
 
             foreach (var file in files)
@@ -78,7 +91,20 @@ public class PackageScanner
 
         static List<(string Name, string Version, string Project)> ScanPackagesInCsProjectFiles(string directory, bool includeTransitive)
         {
-            var files = Directory.EnumerateFiles(directory, "*.csproj", SearchOption.AllDirectories);
+            IEnumerable<string> files;
+
+            if (File.Exists(directory))
+            {
+                if (!Path.GetExtension(directory).Equals(".csproj", StringComparison.OrdinalIgnoreCase))
+                    return [];
+
+                files = [directory];
+            }
+            else
+            {
+                files = Directory.EnumerateFiles(directory, "*.csproj", SearchOption.AllDirectories);
+            }
+
             var packages = new List<(string Name, string Version, string Project)>();
 
             foreach (var file in files)

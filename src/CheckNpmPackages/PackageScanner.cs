@@ -11,7 +11,7 @@ public class PackageScanner
         foreach (var directory in arguments.Directories)
         {
             var scannedPackages = arguments.IncludeTransitive
-                ? ScanPackagesWithLockFileScan(directory)
+                ? ScanPackagesInPackageLockJsonFiles(directory)
                 : ScanPackagesInPackageJsonFiles(directory);
             packages.AddRange(scannedPackages);
         }
@@ -52,16 +52,33 @@ public class PackageScanner
 
         return packageGroups;
 
-        static List<(string Name, string Version, string? ResolvedVersion, string Project)> ScanPackagesWithLockFileScan(string directory)
+        static List<(string Name, string Version, string? ResolvedVersion, string Project)> ScanPackagesInPackageLockJsonFiles(string directory)
         {
-            var packageJsonFiles = Directory.EnumerateFiles(directory, "package.json", SearchOption.AllDirectories);
-            var packageLockJsonFiles = Directory.EnumerateFiles(directory, "package-lock.json", SearchOption.AllDirectories);
+            IEnumerable<string> files;
 
-            var allFiles = packageJsonFiles.Concat(packageLockJsonFiles);
+            if (File.Exists(directory))
+            {
+                var fileName = Path.GetFileName(directory);
+                if (!fileName.Equals("package.json", StringComparison.OrdinalIgnoreCase) &&
+                    !fileName.Equals("package-lock.json", StringComparison.OrdinalIgnoreCase))
+                {
+                    return [];
+                }
+
+                files = [fileName];
+            }
+            else
+            {
+                var packageJsonFiles = Directory.EnumerateFiles(directory, "package.json", SearchOption.AllDirectories);
+                var packageLockJsonFiles = Directory.EnumerateFiles(directory, "package-lock.json", SearchOption.AllDirectories);
+                files = packageJsonFiles.Concat(packageLockJsonFiles);
+            }
+
             var packages = new List<(string Name, string Version, string? ResolvedVersion, string Project)>();
+
             var processedDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var file in allFiles)
+            foreach (var file in files)
             {
                 var normalizedPath = file.Replace("\\", "/");
                 if (normalizedPath.Contains("/node_modules/", StringComparison.OrdinalIgnoreCase))
@@ -200,7 +217,20 @@ public class PackageScanner
 
         static List<(string Name, string Version, string? ResolvedVersion, string Project)> ScanPackagesInPackageJsonFiles(string directory)
         {
-            var files = Directory.EnumerateFiles(directory, "package.json", SearchOption.AllDirectories);
+            IEnumerable<string> files;
+
+            if (File.Exists(directory))
+            {
+                if (!Path.GetFileName(directory).Equals("package.json", StringComparison.OrdinalIgnoreCase))
+                    return [];
+
+                files = [directory];
+            }
+            else
+            {
+                files = Directory.EnumerateFiles(directory, "package.json", SearchOption.AllDirectories);
+            }
+
             var packages = new List<(string Name, string Version, string? ResolvedVersion, string Project)>();
 
             foreach (var file in files)
