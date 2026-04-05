@@ -20,7 +20,8 @@ public class PackageScannerTests
             samplePath
         );
 
-        await PackageScanner.RunAsync(arguments);
+        var packageGroups = await PackageScanner.RunAsync(arguments);
+        ReportsWriter.Write(packageGroups, arguments);
 
         Assert.True(File.Exists(Path.Combine(samplePath, "packages.csv")), "CSV report not generated");
         Assert.True(File.Exists(Path.Combine(samplePath, "packages.html")), "HTML report not generated");
@@ -39,7 +40,8 @@ public class PackageScannerTests
             true
         );
 
-        await PackageScanner.RunAsync(arguments);
+        var packageGroups = await PackageScanner.RunAsync(arguments);
+        ReportsWriter.Write(packageGroups, arguments);
 
         Assert.True(File.Exists(Path.Combine(samplePath, "packages.csv")), "CSV report not generated");
         Assert.True(File.Exists(Path.Combine(samplePath, "packages.html")), "HTML report not generated");
@@ -57,7 +59,8 @@ public class PackageScannerTests
             samplePath
         );
 
-        await PackageScanner.RunAsync(arguments);
+        var packageGroups = await PackageScanner.RunAsync(arguments);
+        ReportsWriter.Write(packageGroups, arguments);
 
         Assert.True(File.Exists(Path.Combine(samplePath, "packages.csv")), "CSV report not generated");
         Assert.True(File.Exists(Path.Combine(samplePath, "packages.html")), "HTML report not generated");
@@ -76,7 +79,8 @@ public class PackageScannerTests
             true
         );
 
-        await PackageScanner.RunAsync(arguments);
+        var packageGroups = await PackageScanner.RunAsync(arguments);
+        ReportsWriter.Write(packageGroups, arguments);
 
         Assert.True(File.Exists(Path.Combine(samplePath, "packages.csv")), "CSV report not generated");
         Assert.True(File.Exists(Path.Combine(samplePath, "packages.html")), "HTML report not generated");

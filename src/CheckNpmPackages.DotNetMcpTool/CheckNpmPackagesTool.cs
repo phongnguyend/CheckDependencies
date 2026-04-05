@@ -7,7 +7,7 @@ namespace CheckNpmPackages.DotNetMcpTool;
 public class CheckNpmPackagesTool
 {
     [McpServerTool(Name = "CheckNpmPackages"), Description("Scan and generate reports for Npm package dependencies in projects")]
-    public static async Task ProcessAsync(
+    public static async Task<List<PackageEntry>> ProcessAsync(
         [Description("One or more directory paths to scan for Npm packages. If not provided, scans current directory.")] 
         string[]? directories = null,
         [Description("Report types to generate (valid values: csv, html, md). If not provided, generates CSV, HTML, and Markdown reports.")] 
@@ -24,7 +24,9 @@ public class CheckNpmPackagesTool
             IncludeTransitive: includeTransitive
         );
         
-        await PackageScanner.RunAsync(parsedArgs);
+        var packageGroups = await PackageScanner.RunAsync(parsedArgs);
+        ReportsWriter.Write(packageGroups, parsedArgs);
+        return packageGroups;
     }
 
     [McpServerTool(Name = "GetNpmPackageVersion"), Description("Get information about a specific version of an npm package, including license, published date, deprecation and vulnerability status")]

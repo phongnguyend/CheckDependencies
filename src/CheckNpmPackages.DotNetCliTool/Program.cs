@@ -1,4 +1,5 @@
 ﻿using CheckNpmPackages;
 
 var parsedArgs = CommandLineParser.ParseParameters(args);
-await PackageScanner.RunAsync(parsedArgs);
+var packageGroups = await PackageScanner.RunAsync(parsedArgs);
+ReportsWriter.Write(packageGroups, parsedArgs);
