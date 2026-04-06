@@ -12,6 +12,16 @@ public static class CsvReportGenerator
 
         using var fileStream = File.Open(filePath, FileMode.Create);
         using var streamWriter = new StreamWriter(fileStream);
+        
+        var headerLine = "Name,Version,Resolved Version,Resolved License,Resolved Published Date,Resolved Deprecated,Resolved Vulnerabilities";
+        if (arguments.CheckLatestPatch)
+            headerLine += ",Latest Patch Version,Latest Patch License,Latest Patch Published Date,Latest Patch Deprecated,Latest Patch Vulnerabilities,Latest Patch Url";
+        if (arguments.CheckLatestMinor)
+            headerLine += ",Latest Minor Version,Latest Minor License,Latest Minor Published Date,Latest Minor Deprecated,Latest Minor Vulnerabilities,Latest Minor Url";
+        headerLine += ",Latest Version,Latest License,Latest Published Date,Latest Deprecated,Latest Vulnerabilities,Resolved Url,Latest Url,Projects";
+        
+        streamWriter.WriteLine(headerLine);
+        
         foreach (var package in packages)
         {
             if (ignoredPackages.Any(package.Name.StartsWith))
@@ -31,7 +41,7 @@ public static class CsvReportGenerator
             var latestUrlValue = package.LatestVersion.Url ?? "";
             var resolvedVersionValue = package.ResolvedVersion.Version ?? "";
             
-            var line = $"{package.Name},{package.Version},\"{resolvedVersionValue}\",\"{licenseValue}\",\"{publishedDateValue}\",\"{deprecatedValue}\",\"{vulnerabilitiesValue}\",\"{latestVersionValue}\",\"{latestLicenseValue}\",\"{latestPublishedDateValue}\",\"{latestDeprecatedValue}\",\"{latestVulnerabilitiesValue}\",\"{package.ResolvedVersion.Url}\",\"{latestUrlValue}\",\"{package.Projects}\"";
+            var line = $"{package.Name},{package.Version},\"{resolvedVersionValue}\",\"{licenseValue}\",\"{publishedDateValue}\",\"{deprecatedValue}\",\"{vulnerabilitiesValue}\"";
             
             if (arguments.CheckLatestPatch && package.LatestPatchVersion != null)
             {
@@ -54,6 +64,8 @@ public static class CsvReportGenerator
                 var latestMinorUrlValue = package.LatestMinorVersion.Url ?? "";
                 line += $",\"{latestMinorVersionValue}\",\"{latestMinorLicenseValue}\",\"{latestMinorPublishedDateValue}\",\"{latestMinorDeprecatedValue}\",\"{latestMinorVulnerabilitiesValue}\",\"{latestMinorUrlValue}\"";
             }
+            
+            line += $",\"{latestVersionValue}\",\"{latestLicenseValue}\",\"{latestPublishedDateValue}\",\"{latestDeprecatedValue}\",\"{latestVulnerabilitiesValue}\",\"{package.ResolvedVersion.Url}\",\"{latestUrlValue}\",\"{package.Projects}\"";
             
             streamWriter.WriteLine(line);
         }

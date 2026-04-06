@@ -47,4 +47,24 @@ public class CheckNpmPackagesTool
         var results = await NpmPackgeResolver.GetPackagesInfoAsync([key]);
         return results.TryGetValue(key, out var info) ? info.LatestVersion : new VersionEntry(null, null, null, null, null, null);
     }
+
+    [McpServerTool(Name = "GetNpmPackageLatestPatchVersion"), Description("Get information about the latest patch version of an npm package, including license, published date, deprecation and vulnerability status")]
+    public static async Task<VersionEntry?> GetLatestPatchVersionAsync(
+        [Description("The npm package name (e.g. lodash)")] string packageName,
+        [Description("The current package version to find the latest patch for (e.g. 4.17.0)")] string currentVersion)
+    {
+        var key = (packageName, currentVersion, (string?)null);
+        var results = await NpmPackgeResolver.GetPackagesInfoAsync([key]);
+        return results.TryGetValue(key, out var info) ? info.LatestPatchVersion : null;
+    }
+
+    [McpServerTool(Name = "GetNpmPackageLatestMinorVersion"), Description("Get information about the latest minor version of an npm package, including license, published date, deprecation and vulnerability status")]
+    public static async Task<VersionEntry?> GetLatestMinorVersionAsync(
+        [Description("The npm package name (e.g. lodash)")] string packageName,
+        [Description("The current package version to find the latest minor for (e.g. 4.17.0)")] string currentVersion)
+    {
+        var key = (packageName, currentVersion, (string?)null);
+        var results = await NpmPackgeResolver.GetPackagesInfoAsync([key]);
+        return results.TryGetValue(key, out var info) ? info.LatestMinorVersion : null;
+    }
 }

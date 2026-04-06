@@ -17,21 +17,21 @@ public static class MarkdownReportGenerator
         streamWriter.WriteLine($"Generated on: {DateTime.Now:yyyy-MM-dd HH:mm:ss zzz}");
         streamWriter.WriteLine();
         
-        var headerLine = "| Name | Version | Resolved Version | License | Published Date | Deprecated | Vulnerabilities | Latest Version | Latest License | Latest Published Date | Latest Deprecated | Latest Vulnerabilities |";
+        var headerLine = "| Name | Version | Resolved Version | License | Published Date | Deprecated | Vulnerabilities |";
         if (arguments.CheckLatestPatch)
             headerLine += " Latest Patch Version | Latest Patch License | Latest Patch Published Date | Latest Patch Deprecated | Latest Patch Vulnerabilities |";
         if (arguments.CheckLatestMinor)
             headerLine += " Latest Minor Version | Latest Minor License | Latest Minor Published Date | Latest Minor Deprecated | Latest Minor Vulnerabilities |";
-        headerLine += " Projects |";
+        headerLine += " Latest Version | Latest License | Latest Published Date | Latest Deprecated | Latest Vulnerabilities | Projects |";
         
         streamWriter.WriteLine(headerLine);
         
-        var separatorLine = "| ---- | ------- | ---------------- | ------- | -------------- | ---------- | --------------- | -------------- | -------------- | --------------------- | ----------------- | ---------------------- |";
+        var separatorLine = "| ---- | ------- | ---------------- | ------- | -------------- | ---------- | --------------- |";
         if (arguments.CheckLatestPatch)
             separatorLine += " -------------------- | -------------------- | ----------------------------- | ----------------------- | ----------------------------- |";
         if (arguments.CheckLatestMinor)
             separatorLine += " -------------------- | -------------------- | ----------------------------- | ----------------------- | ----------------------------- |";
-        separatorLine += " -------- |";
+        separatorLine += " -------------- | -------------- | --------------------- | ----------------- | ---------------------- | -------- |";
         
         streamWriter.WriteLine(separatorLine);
 
@@ -56,7 +56,7 @@ public static class MarkdownReportGenerator
             var latestDeprecatedMd = EscapeMarkdown(package.LatestVersion.Deprecated ?? "");
             var latestVulnerabilitiesMd = EscapeMarkdown(package.LatestVersion.Vulnerabilities ?? "");
 
-            var line = $"| {EscapeMarkdown(package.Name)} | {versionMd} | {resolvedVersionMd} | {licenseMd} | {publishedDateMd} | {deprecatedMd} | {vulnerabilitiesMd} | {latestVersionMd} | {latestLicenseMd} | {latestPublishedDateMd} | {latestDeprecatedMd} | {latestVulnerabilitiesMd} |";
+            var line = $"| {EscapeMarkdown(package.Name)} | {versionMd} | {resolvedVersionMd} | {licenseMd} | {publishedDateMd} | {deprecatedMd} | {vulnerabilitiesMd} |";
             
             if (arguments.CheckLatestPatch)
             {
@@ -82,7 +82,7 @@ public static class MarkdownReportGenerator
                 line += $" {minorVersionMd} | {minorLicenseMd} | {minorPublishedDateMd} | {minorDeprecatedMd} | {minorVulnerabilitiesMd} |";
             }
             
-            line += $" {EscapeMarkdown(package.Projects)} |";
+            line += $" {latestVersionMd} | {latestLicenseMd} | {latestPublishedDateMd} | {latestDeprecatedMd} | {latestVulnerabilitiesMd} | {EscapeMarkdown(package.Projects)} |";
             
             streamWriter.WriteLine(line);
         }

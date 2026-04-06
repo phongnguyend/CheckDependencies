@@ -51,11 +51,11 @@ public static class HtmlReportGenerator
         streamWriter.WriteLine("                <th rowspan=\"2\">Name</th>");
         streamWriter.WriteLine("                <th rowspan=\"2\">Version</th>");
         streamWriter.WriteLine("                <th colspan=\"5\">Current Resolved Version</th>");
-        streamWriter.WriteLine("                <th colspan=\"5\">Latest Version</th>");
         if (arguments.CheckLatestPatch)
             streamWriter.WriteLine("                <th colspan=\"5\">Latest Patch Version</th>");
         if (arguments.CheckLatestMinor)
             streamWriter.WriteLine("                <th colspan=\"5\">Latest Minor Version</th>");
+        streamWriter.WriteLine("                <th colspan=\"5\">Latest Version</th>");
         streamWriter.WriteLine("                <th rowspan=\"2\">Projects</th>");
         streamWriter.WriteLine("            </tr>");
         streamWriter.WriteLine("            <tr>");
@@ -64,11 +64,6 @@ public static class HtmlReportGenerator
         streamWriter.WriteLine("                <th>Published Date</th>");
         streamWriter.WriteLine("                <th>Deprecated</th>");
         streamWriter.WriteLine("                <th>Vulnerable</th>");
-        streamWriter.WriteLine("                <th>Version</th>");
-        streamWriter.WriteLine("                <th>License</th>");
-        streamWriter.WriteLine("                <th>Published Date</th>");
-        streamWriter.WriteLine("                <th>Deprecated</th>");
-        streamWriter.WriteLine("                <th>Vulnerable</th>");
         if (arguments.CheckLatestPatch)
         {
             streamWriter.WriteLine("                <th>Version</th>");
@@ -85,6 +80,11 @@ public static class HtmlReportGenerator
             streamWriter.WriteLine("                <th>Deprecated</th>");
             streamWriter.WriteLine("                <th>Vulnerable</th>");
         }
+        streamWriter.WriteLine("                <th>Version</th>");
+        streamWriter.WriteLine("                <th>License</th>");
+        streamWriter.WriteLine("                <th>Published Date</th>");
+        streamWriter.WriteLine("                <th>Deprecated</th>");
+        streamWriter.WriteLine("                <th>Vulnerable</th>");
         streamWriter.WriteLine("            </tr>");
         streamWriter.WriteLine("        </thead>");
         streamWriter.WriteLine("        <tbody>");
@@ -134,20 +134,15 @@ public static class HtmlReportGenerator
             streamWriter.WriteLine($"                <td class=\"published-date\">{publishedDateHtml}</td>");
             streamWriter.WriteLine($"                <td class=\"deprecated\">{deprecatedHtml}</td>");
             streamWriter.WriteLine($"                <td class=\"vulnerable\">{vulnerabilitiesHtml}</td>");
-            streamWriter.WriteLine($"                <td class=\"{latestVersionClass}\">{latestVersionHtml}</td>");
-            streamWriter.WriteLine($"                <td class=\"license\">{latestLicenseHtml}</td>");
-            streamWriter.WriteLine($"                <td class=\"published-date\">{latestPublishedDateHtml}</td>");
-            streamWriter.WriteLine($"                <td class=\"deprecated\">{latestDeprecatedHtml}</td>");
-            streamWriter.WriteLine($"                <td class=\"vulnerable\">{latestVulnerabilitiesHtml}</td>");
             if (arguments.CheckLatestPatch)
             {
                 var patchVersionHtml = package.LatestPatchVersion?.Url != null
                     ? $"<a href=\"{package.LatestPatchVersion.Url}\" target=\"_blank\">{System.Net.WebUtility.HtmlEncode(package.LatestPatchVersion.Version ?? "N/A")}</a>"
                     : System.Net.WebUtility.HtmlEncode(package.LatestPatchVersion?.Version ?? "N/A");
-                var patchLicenseHtml = FormatLicenseHtml(package.LatestPatchVersion.License);
-                var patchPublishedDateHtml = System.Net.WebUtility.HtmlEncode(package.LatestPatchVersion.PublishedDate ?? "N/A");
-                var patchDeprecatedHtml = FormatDeprecatedHtml(package.LatestPatchVersion.Deprecated);
-                var patchVulnerabilitiesHtml = FormatVulnerabilitiesHtml(package.LatestPatchVersion.Vulnerabilities);
+                var patchLicenseHtml = FormatLicenseHtml(package.LatestPatchVersion?.License);
+                var patchPublishedDateHtml = System.Net.WebUtility.HtmlEncode(package.LatestPatchVersion?.PublishedDate ?? "N/A");
+                var patchDeprecatedHtml = FormatDeprecatedHtml(package.LatestPatchVersion?.Deprecated);
+                var patchVulnerabilitiesHtml = FormatVulnerabilitiesHtml(package.LatestPatchVersion?.Vulnerabilities);
                 streamWriter.WriteLine($"                <td class=\"version\">{patchVersionHtml}</td>");
                 streamWriter.WriteLine($"                <td class=\"license\">{patchLicenseHtml}</td>");
                 streamWriter.WriteLine($"                <td class=\"published-date\">{patchPublishedDateHtml}</td>");
@@ -159,16 +154,21 @@ public static class HtmlReportGenerator
                 var minorVersionHtml = package.LatestMinorVersion?.Url != null
                     ? $"<a href=\"{package.LatestMinorVersion.Url}\" target=\"_blank\">{System.Net.WebUtility.HtmlEncode(package.LatestMinorVersion.Version ?? "N/A")}</a>"
                     : System.Net.WebUtility.HtmlEncode(package.LatestMinorVersion?.Version ?? "N/A");
-                var minorLicenseHtml = FormatLicenseHtml(package.LatestMinorVersion.License);
-                var minorPublishedDateHtml = System.Net.WebUtility.HtmlEncode(package.LatestMinorVersion.PublishedDate ?? "N/A");
-                var minorDeprecatedHtml = FormatDeprecatedHtml(package.LatestMinorVersion.Deprecated);
-                var minorVulnerabilitiesHtml = FormatVulnerabilitiesHtml(package.LatestMinorVersion.Vulnerabilities);
+                var minorLicenseHtml = FormatLicenseHtml(package.LatestMinorVersion?.License);
+                var minorPublishedDateHtml = System.Net.WebUtility.HtmlEncode(package.LatestMinorVersion?.PublishedDate ?? "N/A");
+                var minorDeprecatedHtml = FormatDeprecatedHtml(package.LatestMinorVersion?.Deprecated);
+                var minorVulnerabilitiesHtml = FormatVulnerabilitiesHtml(package.LatestMinorVersion?.Vulnerabilities);
                 streamWriter.WriteLine($"                <td class=\"version\">{minorVersionHtml}</td>");
                 streamWriter.WriteLine($"                <td class=\"license\">{minorLicenseHtml}</td>");
                 streamWriter.WriteLine($"                <td class=\"published-date\">{minorPublishedDateHtml}</td>");
                 streamWriter.WriteLine($"                <td class=\"deprecated\">{minorDeprecatedHtml}</td>");
                 streamWriter.WriteLine($"                <td class=\"vulnerable\">{minorVulnerabilitiesHtml}</td>");
             }
+            streamWriter.WriteLine($"                <td class=\"{latestVersionClass}\">{latestVersionHtml}</td>");
+            streamWriter.WriteLine($"                <td class=\"license\">{latestLicenseHtml}</td>");
+            streamWriter.WriteLine($"                <td class=\"published-date\">{latestPublishedDateHtml}</td>");
+            streamWriter.WriteLine($"                <td class=\"deprecated\">{latestDeprecatedHtml}</td>");
+            streamWriter.WriteLine($"                <td class=\"vulnerable\">{latestVulnerabilitiesHtml}</td>");
             streamWriter.WriteLine($"                <td class=\"projects\">{System.Net.WebUtility.HtmlEncode(package.Projects)}</td>");
             streamWriter.WriteLine("            </tr>");
         }
