@@ -27,7 +27,8 @@ public static class NugetPackageResolver
     private static readonly ConcurrentDictionary<string, Task<RegistrationIndex?>> RegistrationCache = new(StringComparer.OrdinalIgnoreCase);
 
     public static async Task<Dictionary<(string Name, string Version), PackageInfo>> GetPackagesInfoAsync(
-        IEnumerable<(string Name, string Version)> packages)
+        IEnumerable<(string Name, string Version)> packages,
+        bool includePrerelease = false)
     {
         var distinct = packages.Distinct().ToList();
         var results = new Dictionary<(string Name, string Version), PackageInfo>();
@@ -42,7 +43,7 @@ public static class NugetPackageResolver
             await semaphore.WaitAsync();
             try
             {
-                var info = await GetPackageInfoAsync(package.Name, package.Version);
+                var info = await GetPackageInfoAsync(package.Name, package.Version, includePrerelease);
                 lock (results)
                 {
                     results[package] = info;
@@ -59,7 +60,7 @@ public static class NugetPackageResolver
         return results;
     }
 
-    public static async Task<PackageInfo> GetPackageInfoAsync(string packageName, string? version)
+    public static async Task<PackageInfo> GetPackageInfoAsync(string packageName, string? version, bool includePrerelease = false)
     {
         if (string.IsNullOrWhiteSpace(packageName))
             return new PackageInfo(new VersionEntry(null, null, null, null, null, null), new VersionEntry(null, null, null, null, null, null));
@@ -94,8 +95,8 @@ public static class NugetPackageResolver
 
                     allEntries.Add((catalogEntry, item));
 
-                    // Track the latest (non-prerelease) version
-                    if (catalogEntry.Listed != false && !IsPrerelease(catalogEntry.Version))
+                    // Track the latest (non-prerelease or prerelease based on option) version
+                    if (catalogEntry.Listed != false && (!IsPrerelease(catalogEntry.Version) || includePrerelease))
                     {
                         if (latestEntry == null || CompareVersions(catalogEntry.Version, latestEntry.Version) > 0)
                         {
@@ -121,11 +122,11 @@ public static class NugetPackageResolver
                 else
                 {
                     // Try to resolve range/wildcard
-                    resolvedVersion = ResolveNugetVersion(version, availableVersions);
+                    resolvedVersion = ResolveNugetVersion(version, availableVersions, includePrerelease);
                 }
             }
 
-            // If not resolved, pick latest (non-prerelease)
+            // If not resolved, pick latest (non-prerelease or prerelease based on option)
             if (string.IsNullOrWhiteSpace(resolvedVersion))
             {
                 resolvedVersion = NormalizeVersion(latestEntry?.Version);
@@ -167,7 +168,7 @@ public static class NugetPackageResolver
             {
                 // Find latest patch version (same major.minor, highest patch)
                 var patchCandidate = allEntries
-                    .Where(e => !IsPrerelease(e.Entry.Version) &&
+                    .Where(e => (!IsPrerelease(e.Entry.Version) || includePrerelease) &&
                                 NuGetVersion.TryParse(e.Entry.Version, out var v) &&
                                 v.Major == resolvedNugetVersion.Major &&
                                 v.Minor == resolvedNugetVersion.Minor &&
@@ -187,7 +188,7 @@ public static class NugetPackageResolver
 
                 // Find latest minor version (same major, highest minor.patch)
                 var minorCandidate = allEntries
-                    .Where(e => !IsPrerelease(e.Entry.Version) &&
+                    .Where(e => (!IsPrerelease(e.Entry.Version) || includePrerelease) &&
                                 NuGetVersion.TryParse(e.Entry.Version, out var v) &&
                                 v.Major == resolvedNugetVersion.Major &&
                                 e.Entry.Listed != false)
@@ -309,32 +310,43 @@ public static class NugetPackageResolver
     }
 
     // Resolve NuGet version range or floating versions to the highest matching available version
-    public static string? ResolveNugetVersion(string range, IEnumerable<string> versions)
+    public static string? ResolveNugetVersion(string range, IEnumerable<string> versions, bool includePrerelease = false)
     {
         if (string.IsNullOrWhiteSpace(range))
             return null;
 
-        var parsedVersions = versions
+        var allVersions = versions
             .Select(v => NuGetVersion.TryParse(v, out var nv) ? nv : null)
             .Where(v => v != null)
             .Cast<NuGetVersion>()
             .ToList();
 
-        if (parsedVersions.Count == 0)
+        if (allVersions.Count == 0)
             return null;
 
         // Exact version (like 1.2.3-beta)
         if (NuGetVersion.TryParse(range, out var exact))
         {
-            var match = parsedVersions
-                .FirstOrDefault(v => v == exact);
-
-            return match?.ToNormalizedString();
+            var match = allVersions.FirstOrDefault(v => v == exact);
+            if (match != null)
+                return match.ToNormalizedString();
+            
+            // If exact version not found, fall through to range parsing
         }
 
         // Range or floating version
         if (!VersionRange.TryParse(range, out var versionRange))
             return null;
+
+        // Filter versions: first try with the includePrerelease flag, 
+        // then fall back to allowing prereleases if no stable versions match
+        var parsedVersions = allVersions.Where(v => !v.IsPrerelease || includePrerelease).ToList();
+
+        if (parsedVersions.Count == 0 && includePrerelease)
+        {
+            // Already filtered with includePrerelease=true, nothing more to do
+            parsedVersions = allVersions;
+        }
 
         // Floating version
         if (versionRange.Float != null)
@@ -344,10 +356,33 @@ public static class NugetPackageResolver
         }
 
         // Normal range
-        return parsedVersions
-            .Where(v => versionRange.Satisfies(v))
-            .Max()
-            ?.ToNormalizedString();
+        var matched = parsedVersions.Where(v => versionRange.Satisfies(v)).ToList();
+        
+        if (matched.Count > 0)
+            return matched.Max()?.ToNormalizedString();
+
+        // Fallback: if no versions matched and includePrerelease is true,
+        // look for prerelease versions that satisfy the range spec
+        if (includePrerelease && matched.Count == 0)
+        {
+            // Try to extract the lower bound version from the range for fallback matching
+            var minVersion = versionRange.MinVersion;
+            if (minVersion != null)
+            {
+                var prereleaseCandidates = allVersions
+                    .Where(v => v.IsPrerelease &&
+                                v.Major == minVersion.Major &&
+                                v.Minor == minVersion.Minor &&
+                                v.Patch == minVersion.Patch)
+                    .OrderByDescending(v => v)
+                    .ToList();
+
+                if (prereleaseCandidates.Count > 0)
+                    return prereleaseCandidates.First().ToNormalizedString();
+            }
+        }
+
+        return null;
     }
 
     private static int CompareVersions(string? a, string? b)

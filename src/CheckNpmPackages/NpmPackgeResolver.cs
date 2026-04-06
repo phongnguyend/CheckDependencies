@@ -24,7 +24,8 @@ public static class NpmPackgeResolver
     private static readonly ConcurrentDictionary<string, Task<JsonElement?>> PackageDocCache = new(StringComparer.OrdinalIgnoreCase);
 
     public static async Task<Dictionary<(string Name, string Version, string? ResolvedVersion), PackageInfo>> GetPackagesInfoAsync(
-        IEnumerable<(string Name, string Version, string? ResolvedVersion)> packages)
+        IEnumerable<(string Name, string Version, string? ResolvedVersion)> packages,
+        bool includePrerelease = false)
     {
         var distinct = packages.Distinct().ToList();
         var results = new Dictionary<(string Name, string Version, string? ResolvedVersion), PackageInfo>();
@@ -39,7 +40,7 @@ public static class NpmPackgeResolver
             await semaphore.WaitAsync();
             try
             {
-                var info = await GetPackageInfoAsync(package.Name, package.Version, package.ResolvedVersion);
+                var info = await GetPackageInfoAsync(package.Name, package.Version, package.ResolvedVersion, includePrerelease);
                 lock (results)
                 {
                     results[(package.Name, package.Version, package.ResolvedVersion)] = info;
@@ -97,7 +98,7 @@ public static class NpmPackgeResolver
         return results;
     }
 
-    public static async Task<PackageInfo> GetPackageInfoAsync(string packageName, string? version, string? resolvedVersionHint = null)
+    public static async Task<PackageInfo> GetPackageInfoAsync(string packageName, string? version, string? resolvedVersionHint = null, bool includePrerelease = false)
     {
         if (string.IsNullOrWhiteSpace(packageName))
             return new PackageInfo(new VersionEntry(null, null, null, null, null, null), new VersionEntry(null, null, null, null, null, null));
@@ -141,7 +142,7 @@ public static class NpmPackgeResolver
                 }
 
                 // Resolve the version range to an actual version like npm install does
-                resolvedVersion = ResolveVersion(version, availableVersions, distTags);
+                resolvedVersion = ResolveVersion(version, availableVersions, distTags, includePrerelease);
             }
 
             if (string.IsNullOrWhiteSpace(resolvedVersion))
@@ -226,7 +227,7 @@ public static class NpmPackgeResolver
 
                     // Find latest patch version (same major.minor, highest patch)
                     var patchCandidate = allVersions
-                        .Where(v => v.Major == resolvedSemVer.Major && v.Minor == resolvedSemVer.Minor && v.Prerelease == null)
+                        .Where(v => v.Major == resolvedSemVer.Major && v.Minor == resolvedSemVer.Minor && (includePrerelease || v.Prerelease == null))
                         .OrderByDescending(v => v)
                         .FirstOrDefault();
                     if (patchCandidate != null)
@@ -236,7 +237,7 @@ public static class NpmPackgeResolver
 
                     // Find latest minor version (same major, highest minor.patch, no prerelease)
                     var minorCandidate = allVersions
-                        .Where(v => v.Major == resolvedSemVer.Major && v.Prerelease == null)
+                        .Where(v => v.Major == resolvedSemVer.Major && (includePrerelease || v.Prerelease == null))
                         .OrderByDescending(v => v)
                         .FirstOrDefault();
                     if (minorCandidate != null)
@@ -494,7 +495,7 @@ public static class NpmPackgeResolver
     /// Resolves a version range string to the highest matching version from the available versions,
     /// following npm semver resolution rules.
     /// </summary>
-    internal static string? ResolveVersion(string? range, List<SemVer> availableVersions, JsonElement distTags = default)
+    internal static string? ResolveVersion(string? range, List<SemVer> availableVersions, JsonElement distTags = default, bool includePrerelease = false)
     {
         if (string.IsNullOrWhiteSpace(range))
             return null;
@@ -514,13 +515,42 @@ public static class NpmPackgeResolver
         if (comparatorSets.Count == 0)
             return null;
 
-        // Filter to non-prerelease versions unless the range explicitly references a prerelease
+        // Filter to versions that satisfy the range
         var candidates = availableVersions
-            .Where(v => SatisfiesRange(v, comparatorSets))
+            .Where(v => SatisfiesRange(v, comparatorSets, includePrerelease))
             .OrderByDescending(v => v)
             .ToList();
 
-        return candidates.FirstOrDefault()?.ToString();
+        if (candidates.Count > 0)
+            return candidates.First().ToString();
+
+        // Fallback: if no candidates and includePrerelease is true, and the range matches a specific version tuple,
+        // look for prerelease versions with the same major.minor.patch
+        if (includePrerelease && comparatorSets.Count == 1 && comparatorSets[0].Count > 0)
+        {
+            var firstComparator = comparatorSets[0][0];
+            // Only apply this fallback for exact equality or range queries that have a specific tuple
+            if (firstComparator.Op == ComparatorOp.Eq || 
+                (firstComparator.Op == ComparatorOp.Gte && comparatorSets[0].Count > 1))
+            {
+                var targetMajor = firstComparator.Major;
+                var targetMinor = firstComparator.Minor;
+                var targetPatch = firstComparator.Patch;
+
+                var prereleaseCandidates = availableVersions
+                    .Where(v => v.Prerelease != null &&
+                                v.Major == targetMajor &&
+                                v.Minor == targetMinor &&
+                                v.Patch == targetPatch)
+                    .OrderByDescending(v => v)
+                    .ToList();
+
+                if (prereleaseCandidates.Count > 0)
+                    return prereleaseCandidates.First().ToString();
+            }
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -772,23 +802,24 @@ public static class NpmPackgeResolver
         ];
     }
 
-    internal static bool SatisfiesRange(SemVer version, List<List<Comparator>> comparatorSets)
+    internal static bool SatisfiesRange(SemVer version, List<List<Comparator>> comparatorSets, bool includePrerelease = false)
     {
         // A version satisfies the range if it satisfies ANY of the comparator sets (OR logic)
         foreach (var set in comparatorSets)
         {
-            if (SatisfiesComparatorSet(version, set))
+            if (SatisfiesComparatorSet(version, set, includePrerelease))
                 return true;
         }
 
         return false;
     }
 
-    private static bool SatisfiesComparatorSet(SemVer version, List<Comparator> comparators)
+    private static bool SatisfiesComparatorSet(SemVer version, List<Comparator> comparators, bool includePrerelease = false)
     {
         // A version satisfies a comparator set if it satisfies ALL comparators (AND logic)
         // npm excludes prereleases unless a comparator in the set explicitly includes a prerelease on the same [major, minor, patch] tuple
-        if (version.Prerelease != null)
+        // or unless includePrerelease is true
+        if (version.Prerelease != null && !includePrerelease)
         {
             var allowPrerelease = comparators.Any(c =>
                 c.Prerelease != null &&

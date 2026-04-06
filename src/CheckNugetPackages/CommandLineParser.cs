@@ -6,7 +6,8 @@ public record ParsedArguments(
     string? ReportDirectory,
     bool IncludeTransitive = false,
     bool CheckLatestPatch = false,
-    bool CheckLatestMinor = false);
+    bool CheckLatestMinor = false,
+    bool IncludePrerelease = false);
 
 public static class CommandLineParser
 {
@@ -18,6 +19,7 @@ public static class CommandLineParser
         bool includeTransitive = false;
         bool checkLatestPatch = false;
         bool checkLatestMinor = false;
+        bool includePrerelease = false;
 
         // Default directories if no arguments provided
         var defaultDirectories = new List<string>
@@ -102,6 +104,11 @@ public static class CommandLineParser
                 checkLatestMinor = true;
                 i++;
             }
+            else if (param == "--include-prerelease")
+            {
+                includePrerelease = true;
+                i++;
+            }
             else
             {
                 Console.WriteLine($"Warning: Unknown parameter '{param}' ignored.");
@@ -115,6 +122,6 @@ public static class CommandLineParser
             reportTypes.AddRange(defaultReportTypes);
         }
 
-        return new ParsedArguments(directories, reportTypes, reportDirectory, includeTransitive, checkLatestPatch, checkLatestMinor);
+        return new ParsedArguments(directories, reportTypes, reportDirectory, includeTransitive, checkLatestPatch, checkLatestMinor, includePrerelease);
     }
 }

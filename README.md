@@ -113,6 +113,7 @@ CheckNugetPackages [directories...] [options]
 - `--include-transitive` - When specified, scans `project.assets.json` files for all direct and transitive dependencies instead of only scanning `.csproj` files. If `project.assets.json` does not exist for a project, it falls back to scanning the `.csproj` file as normal.
 - `--check-latest-patch` - When specified, includes the latest patch version information in the reports. This shows the latest version with the same major and minor version numbers. Adds additional columns with license, published date, deprecated status, and vulnerability information for the patch version.
 - `--check-latest-minor` - When specified, includes the latest minor version information in the reports. This shows the latest version with the same major version number. Adds additional columns with license, published date, deprecated status, and vulnerability information for the minor version.
+- `--include-prerelease` - When specified, includes prerelease versions (alpha, beta, rc, etc.) when checking for the latest versions. By default, only stable releases are considered when using `--check-latest-patch` or `--check-latest-minor`.
 
 #### Examples
 
@@ -214,6 +215,7 @@ CheckNpmPackages [directories...] [options]
 - `--include-transitive` - When specified, scans `package-lock.json` files for all direct and transitive dependencies instead of only scanning `package.json` files. This provides a more complete view of all resolved packages, including nested dependencies.
 - `--check-latest-patch` - When specified, includes the latest patch version information in the reports. This shows the latest version with the same major and minor version numbers. Adds additional columns with license, published date, deprecated status, and vulnerability information for the patch version.
 - `--check-latest-minor` - When specified, includes the latest minor version information in the reports. This shows the latest version with the same major version number. Adds additional columns with license, published date, deprecated status, and vulnerability information for the minor version.
+- `--include-prerelease` - When specified, includes prerelease versions (alpha, beta, rc, etc.) when checking for the latest versions. By default, only stable releases are considered when using `--check-latest-patch` or `--check-latest-minor`.
 
 #### Examples
 

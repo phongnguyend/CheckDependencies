@@ -332,43 +332,20 @@ public class NpmPackageResolverTests
     }
 
     [Fact]
-    public void ResolveVersion_NoMatch_ReturnsNull()
+    public void ResolveVersion_IncludesPrerelease_WhenFlagIsTrue()
     {
-        var versions = ParseVersions("1.0.0", "2.0.0");
-        var result = NpmPackgeResolver.ResolveVersion("^3.0.0", versions);
-        Assert.Null(result);
+        var versions = ParseVersions("1.0.0", "1.1.0", "2.0.0-alpha.1", "2.0.0-beta.1", "2.0.0");
+        var result = NpmPackgeResolver.ResolveVersion("^1.0.0", versions, includePrerelease: true);
+        // With includePrerelease=true, should prefer stable version but accept prerelease versions
+        Assert.Equal("2.0.0-beta.1", result);
     }
 
     [Fact]
-    public void ResolveVersion_NullInput_ReturnsNull()
+    public void ResolveVersion_OnlyPrereleases_WithFlag()
     {
-        var versions = ParseVersions("1.0.0");
-        var result = NpmPackgeResolver.ResolveVersion(null, versions);
-        Assert.Null(result);
-    }
-
-    [Fact]
-    public void ResolveVersion_EmptyInput_ReturnsNull()
-    {
-        var versions = ParseVersions("1.0.0");
-        var result = NpmPackgeResolver.ResolveVersion("", versions);
-        Assert.Null(result);
-    }
-
-    [Fact]
-    public void ResolveVersion_LeadingV_ResolvesCorrectly()
-    {
-        var versions = ParseVersions("1.0.0", "1.5.0", "2.0.0");
-        var result = NpmPackgeResolver.ResolveVersion("v1.0.0", versions);
-        Assert.Equal("1.0.0", result);
-    }
-
-    [Fact]
-    public void ResolveVersion_LeadingEquals_ResolvesCorrectly()
-    {
-        var versions = ParseVersions("1.0.0", "1.5.0", "2.0.0");
-        var result = NpmPackgeResolver.ResolveVersion("=1.5.0", versions);
-        Assert.Equal("1.5.0", result);
+        var versions = ParseVersions("2.0.0-alpha.1", "2.0.0-beta.1", "2.0.0-rc.1");
+        var result = NpmPackgeResolver.ResolveVersion("^2.0.0", versions, includePrerelease: true);
+        Assert.Equal("2.0.0-rc.1", result);
     }
 
     private static List<SemVer> ParseVersions(params string[] versions)

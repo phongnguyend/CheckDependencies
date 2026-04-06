@@ -235,4 +235,36 @@ public class NugetPackageResolverTests
         var result = NugetPackageResolver.ResolveNugetVersion(range, new List<string>(available));
         Assert.Equal(expected, result);
     }
+
+    [Fact]
+    public void ResolveNugetVersion_ExcludesPrerelease_ByDefault()
+    {
+        var versions = new List<string> { "1.0.0", "1.1.0", "2.0.0-alpha.1", "2.0.0" };
+        var result = NugetPackageResolver.ResolveNugetVersion("[1.0.0,)", versions);
+        Assert.Equal("2.0.0", result);
+    }
+
+    [Fact]
+    public void ResolveNugetVersion_IncludesPrerelease_WhenFlagIsTrue()
+    {
+        var versions = new List<string> { "1.0.0", "1.1.0", "2.0.0-alpha.1", "2.0.0-beta.1", "2.0.0" };
+        var result = NugetPackageResolver.ResolveNugetVersion("[1.0.0,)", versions, includePrerelease: true);
+        Assert.Equal("2.0.0", result);
+    }
+
+    [Fact]
+    public void ResolveNugetVersion_OnlyPrereleases_WithFlag()
+    {
+        var versions = new List<string> { "2.0.0-alpha", "2.0.0-beta", "2.0.0-rc" };
+        var result = NugetPackageResolver.ResolveNugetVersion("[2.0.0,)", versions, includePrerelease: true);
+        Assert.Equal("2.0.0-rc", result);
+    }
+
+    [Fact]
+    public void ResolveNugetVersion_OnlyPrereleases_WithoutFlag_ReturnsNull()
+    {
+        var versions = new List<string> { "2.0.0-alpha", "2.0.0-beta", "2.0.0-rc" };
+        var result = NugetPackageResolver.ResolveNugetVersion("[2.0.0,)", versions, includePrerelease: false);
+        Assert.Null(result);
+    }
 }
