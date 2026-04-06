@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 
 namespace CheckNpmPackages;
 
-public record PackageInfo(VersionEntry ResolvedVersion, VersionEntry LatestVersion);
+public record PackageInfo(VersionEntry ResolvedVersion, VersionEntry LatestVersion, VersionEntry? LatestPatchVersion = null, VersionEntry? LatestMinorVersion = null);
 
 public static class NpmPackgeResolver
 {
@@ -62,6 +62,8 @@ public static class NpmPackgeResolver
                 var info = results[key];
                 string? vulnerabilities = null;
                 string? latestVulnerabilities = null;
+                string? patchVulnerabilities = null;
+                string? minorVulnerabilities = null;
 
                 if (!string.IsNullOrWhiteSpace(info.ResolvedVersion.Version) &&
                     bulkVulnMap.TryGetValue((key.Name, info.ResolvedVersion.Version), out var rv))
@@ -71,12 +73,22 @@ public static class NpmPackgeResolver
                     bulkVulnMap.TryGetValue((key.Name, info.LatestVersion.Version), out var lv))
                     latestVulnerabilities = lv;
 
-                if (vulnerabilities != null || latestVulnerabilities != null)
+                if (info.LatestPatchVersion != null && !string.IsNullOrWhiteSpace(info.LatestPatchVersion.Version) &&
+                    bulkVulnMap.TryGetValue((key.Name, info.LatestPatchVersion.Version), out var pv))
+                    patchVulnerabilities = pv;
+
+                if (info.LatestMinorVersion != null && !string.IsNullOrWhiteSpace(info.LatestMinorVersion.Version) &&
+                    bulkVulnMap.TryGetValue((key.Name, info.LatestMinorVersion.Version), out var mv))
+                    minorVulnerabilities = mv;
+
+                if (vulnerabilities != null || latestVulnerabilities != null || patchVulnerabilities != null || minorVulnerabilities != null)
                 {
                     results[key] = info with
                     {
                         ResolvedVersion = info.ResolvedVersion with { Vulnerabilities = vulnerabilities ?? info.ResolvedVersion.Vulnerabilities },
-                        LatestVersion = info.LatestVersion with { Vulnerabilities = latestVulnerabilities ?? info.LatestVersion.Vulnerabilities }
+                        LatestVersion = info.LatestVersion with { Vulnerabilities = latestVulnerabilities ?? info.LatestVersion.Vulnerabilities },
+                        LatestPatchVersion = info.LatestPatchVersion != null ? info.LatestPatchVersion with { Vulnerabilities = patchVulnerabilities ?? info.LatestPatchVersion.Vulnerabilities } : null,
+                        LatestMinorVersion = info.LatestMinorVersion != null ? info.LatestMinorVersion with { Vulnerabilities = minorVulnerabilities ?? info.LatestMinorVersion.Vulnerabilities } : null
                     };
                 }
             }
@@ -192,6 +204,122 @@ public static class NpmPackgeResolver
                 }
             }
 
+            // Determine the latest patch and minor versions
+            VersionEntry? latestPatchVersionEntry = null;
+            VersionEntry? latestMinorVersionEntry = null;
+
+            if (!string.IsNullOrWhiteSpace(resolvedVersion) && SemVer.TryParse(resolvedVersion, out var resolvedSemVer))
+            {
+                string? latestPatchVersion = null;
+                string? latestMinorVersion = null;
+
+                if (docValue.TryGetProperty("versions", out var versionsProp))
+                {
+                    var allVersions = new List<SemVer>();
+                    foreach (var prop in versionsProp.EnumerateObject())
+                    {
+                        if (SemVer.TryParse(prop.Name, out var sv))
+                        {
+                            allVersions.Add(sv);
+                        }
+                    }
+
+                    // Find latest patch version (same major.minor, highest patch)
+                    var patchCandidate = allVersions
+                        .Where(v => v.Major == resolvedSemVer.Major && v.Minor == resolvedSemVer.Minor && v.Prerelease == null)
+                        .OrderByDescending(v => v)
+                        .FirstOrDefault();
+                    if (patchCandidate != null)
+                    {
+                        latestPatchVersion = patchCandidate.ToString();
+                    }
+
+                    // Find latest minor version (same major, highest minor.patch, no prerelease)
+                    var minorCandidate = allVersions
+                        .Where(v => v.Major == resolvedSemVer.Major && v.Prerelease == null)
+                        .OrderByDescending(v => v)
+                        .FirstOrDefault();
+                    if (minorCandidate != null)
+                    {
+                        latestMinorVersion = minorCandidate.ToString();
+                    }
+                }
+
+                // Extract metadata for patch version
+                if (!string.IsNullOrWhiteSpace(latestPatchVersion))
+                {
+                    string? patchLicense = null;
+                    string? patchPublishedDate = null;
+                    string? patchDeprecated = null;
+
+                    if (docValue.TryGetProperty("versions", out var versionsForPatch) &&
+                        versionsForPatch.TryGetProperty(latestPatchVersion, out var patchDoc))
+                    {
+                        if (patchDoc.TryGetProperty("license", out var patchLicenseProp) && patchLicenseProp.ValueKind == JsonValueKind.String)
+                        {
+                            patchLicense = patchLicenseProp.GetString();
+                        }
+
+                        patchDeprecated = ExtractDeprecated(patchDoc);
+                    }
+
+                    if (docValue.TryGetProperty("time", out var timeForPatch) &&
+                        timeForPatch.TryGetProperty(latestPatchVersion, out var patchTimeProp) &&
+                        patchTimeProp.ValueKind == JsonValueKind.String)
+                    {
+                        if (DateTimeOffset.TryParse(patchTimeProp.GetString(), out var dto))
+                        {
+                            patchPublishedDate = dto.ToString("yyyy-MM-dd");
+                        }
+                    }
+
+                    latestPatchVersionEntry = new VersionEntry(
+                        latestPatchVersion,
+                        BuildPackageUrl(packageName, latestPatchVersion),
+                        !string.IsNullOrEmpty(patchLicense) ? patchLicense : null,
+                        patchPublishedDate,
+                        patchDeprecated,
+                        null);
+                }
+
+                // Extract metadata for minor version
+                if (!string.IsNullOrWhiteSpace(latestMinorVersion))
+                {
+                    string? minorLicense = null;
+                    string? minorPublishedDate = null;
+                    string? minorDeprecated = null;
+
+                    if (docValue.TryGetProperty("versions", out var versionsForMinor) &&
+                        versionsForMinor.TryGetProperty(latestMinorVersion, out var minorDoc))
+                    {
+                        if (minorDoc.TryGetProperty("license", out var minorLicenseProp) && minorLicenseProp.ValueKind == JsonValueKind.String)
+                        {
+                            minorLicense = minorLicenseProp.GetString();
+                        }
+
+                        minorDeprecated = ExtractDeprecated(minorDoc);
+                    }
+
+                    if (docValue.TryGetProperty("time", out var timeForMinor) &&
+                        timeForMinor.TryGetProperty(latestMinorVersion, out var minorTimeProp) &&
+                        minorTimeProp.ValueKind == JsonValueKind.String)
+                    {
+                        if (DateTimeOffset.TryParse(minorTimeProp.GetString(), out var dto))
+                        {
+                            minorPublishedDate = dto.ToString("yyyy-MM-dd");
+                        }
+                    }
+
+                    latestMinorVersionEntry = new VersionEntry(
+                        latestMinorVersion,
+                        BuildPackageUrl(packageName, latestMinorVersion),
+                        !string.IsNullOrEmpty(minorLicense) ? minorLicense : null,
+                        minorPublishedDate,
+                        minorDeprecated,
+                        null);
+                }
+            }
+
             return new PackageInfo(
                 new VersionEntry(
                     !string.IsNullOrEmpty(resolvedVersion) ? resolvedVersion : null,
@@ -206,7 +334,9 @@ public static class NpmPackgeResolver
                     !string.IsNullOrEmpty(latestLicense) ? latestLicense : null,
                     latestPublishedDate,
                     latestDeprecated,
-                    null));
+                    null),
+                latestPatchVersionEntry,
+                latestMinorVersionEntry);
         }
         catch (Exception ex)
         {
@@ -260,6 +390,10 @@ public static class NpmPackgeResolver
                     versions.Add(info.ResolvedVersion.Version);
                 if (!string.IsNullOrWhiteSpace(info.LatestVersion.Version))
                     versions.Add(info.LatestVersion.Version);
+                if (info.LatestPatchVersion != null && !string.IsNullOrWhiteSpace(info.LatestPatchVersion.Version))
+                    versions.Add(info.LatestPatchVersion.Version);
+                if (info.LatestMinorVersion != null && !string.IsNullOrWhiteSpace(info.LatestMinorVersion.Version))
+                    versions.Add(info.LatestMinorVersion.Version);
 
                 if (versions.Count == 0)
                     continue;

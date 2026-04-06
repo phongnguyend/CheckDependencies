@@ -111,6 +111,8 @@ CheckNugetPackages [directories...] [options]
   - Can specify multiple types separated by spaces
 - `--report-directory <path>` - Directory where reports will be saved (default: current directory)
 - `--include-transitive` - When specified, scans `project.assets.json` files for all direct and transitive dependencies instead of only scanning `.csproj` files. If `project.assets.json` does not exist for a project, it falls back to scanning the `.csproj` file as normal.
+- `--check-latest-patch` - When specified, includes the latest patch version information in the reports. This shows the latest version with the same major and minor version numbers. Adds additional columns with license, published date, deprecated status, and vulnerability information for the patch version.
+- `--check-latest-minor` - When specified, includes the latest minor version information in the reports. This shows the latest version with the same major version number. Adds additional columns with license, published date, deprecated status, and vulnerability information for the minor version.
 
 #### Examples
 
@@ -138,6 +140,18 @@ CheckNugetPackages "C:\MyProject" --include-transitive
 
 # Combine transitive scan with other options
 CheckNugetPackages "C:\MyProject" --include-transitive --report-type csv html --report-directory "C:\Reports"
+
+# Include latest patch version information
+CheckNugetPackages "C:\MyProject" --check-latest-patch
+
+# Include latest minor version information
+CheckNugetPackages "C:\MyProject" --check-latest-minor
+
+# Include both latest patch and minor versions
+CheckNugetPackages "C:\MyProject" --check-latest-patch --check-latest-minor
+
+# Combine all options
+CheckNugetPackages "C:\MyProject" --include-transitive --check-latest-patch --check-latest-minor --report-type csv html --report-directory "C:\Reports"
 ```
 
 #### Output Files
@@ -198,6 +212,8 @@ CheckNpmPackages [directories...] [options]
   - Can specify multiple types separated by spaces
 - `--report-directory <path>` - Directory where reports will be saved (default: current directory)
 - `--include-transitive` - When specified, scans `package-lock.json` files for all direct and transitive dependencies instead of only scanning `package.json` files. This provides a more complete view of all resolved packages, including nested dependencies.
+- `--check-latest-patch` - When specified, includes the latest patch version information in the reports. This shows the latest version with the same major and minor version numbers. Adds additional columns with license, published date, deprecated status, and vulnerability information for the patch version.
+- `--check-latest-minor` - When specified, includes the latest minor version information in the reports. This shows the latest version with the same major version number. Adds additional columns with license, published date, deprecated status, and vulnerability information for the minor version.
 
 #### Examples
 
@@ -219,6 +235,18 @@ CheckNpmPackages "C:\MyProject\ClientApp" --include-transitive
 
 # Combine transitive scan with other options
 CheckNpmPackages "C:\MyProject" --include-transitive --report-type csv html --report-directory "C:\Reports"
+
+# Include latest patch version information
+CheckNpmPackages "C:\MyProject" --check-latest-patch
+
+# Include latest minor version information
+CheckNpmPackages "C:\MyProject" --check-latest-minor
+
+# Include both latest patch and minor versions
+CheckNpmPackages "C:\MyProject" --check-latest-patch --check-latest-minor
+
+# Combine all options
+CheckNpmPackages "C:\MyProject" --include-transitive --check-latest-patch --check-latest-minor --report-type csv html --report-directory "C:\Reports"
 ```
 
 #### Output Files

@@ -46,7 +46,9 @@ public class PackageScanner
                         info?.LatestVersion.License,
                         info?.LatestVersion.PublishedDate,
                         info?.LatestVersion.Deprecated,
-                        info?.LatestVersion.Vulnerabilities));
+                        info?.LatestVersion.Vulnerabilities),
+                    info?.LatestPatchVersion,
+                    info?.LatestMinorVersion);
             })
             .OrderBy(x => x.Name)
             .ThenBy(x => x.Version).ToList();

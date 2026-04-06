@@ -19,7 +19,8 @@ public class HtmlReportGeneratorTests : IDisposable
     private string GenerateAndRead(string reportTitle, List<PackageEntry> packages, List<string> ignoredPackages)
     {
         var filePath = Path.Combine(_tempDir, $"{Guid.NewGuid():N}.html");
-        HtmlReportGenerator.Generate(filePath, reportTitle, packages, ignoredPackages);
+        var args = new ParsedArguments(["./"], ["html"], null);
+        HtmlReportGenerator.Generate(filePath, reportTitle, packages, ignoredPackages, args);
         return File.ReadAllText(filePath);
     }
 
@@ -183,7 +184,8 @@ public class HtmlReportGeneratorTests : IDisposable
     public void Generate_CreatesDirectoryIfNotExists()
     {
         var filePath = Path.Combine(_tempDir, "subdir", "report.html");
-        HtmlReportGenerator.Generate(filePath, "Test", [], []);
+        var args = new ParsedArguments(["./"], ["html"], null);
+        HtmlReportGenerator.Generate(filePath, "Test", [], [], args);
         Assert.True(File.Exists(filePath));
     }
 

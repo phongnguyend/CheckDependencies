@@ -15,7 +15,7 @@ public static class ReportsWriter
                 ? "packages.csv"
                 : Path.Combine(arguments.ReportDirectory, "packages.csv");
 
-            CsvReportGenerator.Generate(csvPath, packageGroups, ignoredPackages);
+            CsvReportGenerator.Generate(csvPath, packageGroups, ignoredPackages, arguments);
         }
 
         // Generate HTML file if requested
@@ -25,7 +25,7 @@ public static class ReportsWriter
                 ? "packages.html"
                 : Path.Combine(arguments.ReportDirectory, "packages.html");
 
-            HtmlReportGenerator.Generate(htmlPath, "npm Packages Report", packageGroups, ignoredPackages);
+            HtmlReportGenerator.Generate(htmlPath, "npm Packages Report", packageGroups, ignoredPackages, arguments);
         }
 
         // Generate Markdown file if requested
@@ -35,7 +35,7 @@ public static class ReportsWriter
                 ? "packages.md"
                 : Path.Combine(arguments.ReportDirectory, "packages.md");
 
-            MarkdownReportGenerator.Generate(mdPath, "npm Packages Report", packageGroups, ignoredPackages);
+            MarkdownReportGenerator.Generate(mdPath, "npm Packages Report", packageGroups, ignoredPackages, arguments);
         }
     }
 }

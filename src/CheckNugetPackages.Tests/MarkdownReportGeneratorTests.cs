@@ -19,7 +19,8 @@ public class MarkdownReportGeneratorTests : IDisposable
     private string GenerateAndRead(string reportTitle, List<PackageEntry> packages, List<string> ignoredPackages)
     {
         var filePath = Path.Combine(_tempDir, $"{Guid.NewGuid():N}.md");
-        MarkdownReportGenerator.Generate(filePath, reportTitle, packages, ignoredPackages);
+        var args = new ParsedArguments(["./"], ["md"], null);
+        MarkdownReportGenerator.Generate(filePath, reportTitle, packages, ignoredPackages, args);
         return File.ReadAllText(filePath);
     }
 
@@ -151,7 +152,8 @@ public class MarkdownReportGeneratorTests : IDisposable
     public void Generate_CreatesDirectoryIfNotExists()
     {
         var filePath = Path.Combine(_tempDir, "subdir", "report.md");
-        MarkdownReportGenerator.Generate(filePath, "Test", [], []);
+        var args = new ParsedArguments(["./"], ["md"], null);
+        MarkdownReportGenerator.Generate(filePath, "Test", [], [], args);
         Assert.True(File.Exists(filePath));
     }
 

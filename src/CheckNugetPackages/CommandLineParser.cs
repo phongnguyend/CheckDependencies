@@ -1,6 +1,12 @@
 namespace CheckNugetPackages;
 
-public record ParsedArguments(List<string> Directories, List<string> ReportTypes, string? ReportDirectory, bool IncludeTransitive = false);
+public record ParsedArguments(
+    List<string> Directories,
+    List<string> ReportTypes,
+    string? ReportDirectory,
+    bool IncludeTransitive = false,
+    bool CheckLatestPatch = false,
+    bool CheckLatestMinor = false);
 
 public static class CommandLineParser
 {
@@ -10,6 +16,8 @@ public static class CommandLineParser
         var reportTypes = new List<string>();
         string? reportDirectory = null;
         bool includeTransitive = false;
+        bool checkLatestPatch = false;
+        bool checkLatestMinor = false;
 
         // Default directories if no arguments provided
         var defaultDirectories = new List<string>
@@ -84,6 +92,16 @@ public static class CommandLineParser
                 includeTransitive = true;
                 i++;
             }
+            else if (param == "--check-latest-patch")
+            {
+                checkLatestPatch = true;
+                i++;
+            }
+            else if (param == "--check-latest-minor")
+            {
+                checkLatestMinor = true;
+                i++;
+            }
             else
             {
                 Console.WriteLine($"Warning: Unknown parameter '{param}' ignored.");
@@ -97,6 +115,6 @@ public static class CommandLineParser
             reportTypes.AddRange(defaultReportTypes);
         }
 
-        return new ParsedArguments(directories, reportTypes, reportDirectory, includeTransitive);
+        return new ParsedArguments(directories, reportTypes, reportDirectory, includeTransitive, checkLatestPatch, checkLatestMinor);
     }
 }

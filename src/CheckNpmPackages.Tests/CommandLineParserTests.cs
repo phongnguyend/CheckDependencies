@@ -235,4 +235,59 @@ public class CommandLineParserTests
         Assert.Contains("csv", result.ReportTypes);
         Assert.Equal("C:\\Output", result.ReportDirectory);
     }
+
+    [Fact]
+    public void ParseParameters_CheckLatestPatch_DefaultsFalse()
+    {
+        var result = CommandLineParser.ParseParameters([]);
+
+        Assert.False(result.CheckLatestPatch);
+    }
+
+    [Fact]
+    public void ParseParameters_CheckLatestPatch_SetToTrue()
+    {
+        var result = CommandLineParser.ParseParameters(["--check-latest-patch"]);
+
+        Assert.True(result.CheckLatestPatch);
+    }
+
+    [Fact]
+    public void ParseParameters_CheckLatestMinor_DefaultsFalse()
+    {
+        var result = CommandLineParser.ParseParameters([]);
+
+        Assert.False(result.CheckLatestMinor);
+    }
+
+    [Fact]
+    public void ParseParameters_CheckLatestMinor_SetToTrue()
+    {
+        var result = CommandLineParser.ParseParameters(["--check-latest-minor"]);
+
+        Assert.True(result.CheckLatestMinor);
+    }
+
+    [Fact]
+    public void ParseParameters_BothCheckLatestOptions()
+    {
+        var result = CommandLineParser.ParseParameters(["--check-latest-patch", "--check-latest-minor"]);
+
+        Assert.True(result.CheckLatestPatch);
+        Assert.True(result.CheckLatestMinor);
+    }
+
+    [Fact]
+    public void ParseParameters_CheckLatestWithOtherOptions()
+    {
+        var result = CommandLineParser.ParseParameters(
+            ["C:\\Projects", "--check-latest-patch", "--report-type", "csv", "--check-latest-minor"]);
+
+        Assert.True(result.CheckLatestPatch);
+        Assert.True(result.CheckLatestMinor);
+        Assert.Single(result.Directories);
+        Assert.Equal("C:\\Projects", result.Directories[0]);
+        Assert.Single(result.ReportTypes);
+        Assert.Contains("csv", result.ReportTypes);
+    }
 }

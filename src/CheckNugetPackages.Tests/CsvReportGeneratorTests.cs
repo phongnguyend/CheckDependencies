@@ -25,8 +25,9 @@ public class CsvReportGeneratorTests : IDisposable
             new("Newtonsoft.Json", "13.0.3", "ProjectA", new VersionEntry("13.0.3", "https://www.nuget.org/packages/Newtonsoft.Json/13.0.3", "MIT", "2023-03-08", null, null), new VersionEntry("13.0.3", "https://www.nuget.org/packages/Newtonsoft.Json/13.0.3", "MIT", "2023-03-08", null, null)),
             new("Serilog", "3.1.1", "ProjectB", new VersionEntry("3.1.1", "https://www.nuget.org/packages/Serilog/3.1.1", "Apache-2.0", "2023-11-09", null, null), new VersionEntry("4.0.0", "https://www.nuget.org/packages/Serilog/4.0.0", "Apache-2.0", "2024-06-01", null, null)),
         };
+        var args = new ParsedArguments(["./"], ["csv"], null);
 
-        CsvReportGenerator.Generate(filePath, packages, []);
+        CsvReportGenerator.Generate(filePath, packages, [], args);
 
         var lines = File.ReadAllLines(filePath);
         Assert.Equal(2, lines.Length);
@@ -47,8 +48,9 @@ public class CsvReportGeneratorTests : IDisposable
             new("System.Text.Json", "8.0.0", "ProjectA", new VersionEntry("8.0.0", "https://www.nuget.org/packages/System.Text.Json/8.0.0", "MIT", "2023-11-14", null, null), new VersionEntry("8.0.0", "https://www.nuget.org/packages/System.Text.Json/8.0.0", "MIT", "2023-11-14", null, null)),
             new("Newtonsoft.Json", "13.0.3", "ProjectA", new VersionEntry("13.0.3", "https://www.nuget.org/packages/Newtonsoft.Json/13.0.3", "MIT", "2023-03-08", null, null), new VersionEntry("13.0.3", "https://www.nuget.org/packages/Newtonsoft.Json/13.0.3", "MIT", "2023-03-08", null, null)),
         };
+        var args = new ParsedArguments(["./"], ["csv"], null);
 
-        CsvReportGenerator.Generate(filePath, packages, ["System."]);
+        CsvReportGenerator.Generate(filePath, packages, ["System."], args);
 
         var lines = File.ReadAllLines(filePath);
         Assert.Single(lines);
@@ -63,8 +65,9 @@ public class CsvReportGeneratorTests : IDisposable
         {
             new("SomePackage", "1.0.0", "ProjectA", new VersionEntry("1.0.0", "https://www.nuget.org/packages/SomePackage/1.0.0", null, null, null, null), new VersionEntry(null, null, null, null, null, null)),
         };
+        var args = new ParsedArguments(["./"], ["csv"], null);
 
-        CsvReportGenerator.Generate(filePath, packages, []);
+        CsvReportGenerator.Generate(filePath, packages, [], args);
 
         var lines = File.ReadAllLines(filePath);
         Assert.Single(lines);
@@ -75,8 +78,9 @@ public class CsvReportGeneratorTests : IDisposable
     public void Generate_EmptyPackageList_CreatesEmptyFile()
     {
         var filePath = Path.Combine(_tempDir, "packages.csv");
+        var args = new ParsedArguments(["./"], ["csv"], null);
 
-        CsvReportGenerator.Generate(filePath, [], []);
+        CsvReportGenerator.Generate(filePath, [], [], args);
 
         Assert.True(File.Exists(filePath));
         Assert.Empty(File.ReadAllText(filePath));
@@ -86,8 +90,9 @@ public class CsvReportGeneratorTests : IDisposable
     public void Generate_CreatesDirectoryIfNotExists()
     {
         var filePath = Path.Combine(_tempDir, "subdir", "packages.csv");
+        var args = new ParsedArguments(["./"], ["csv"], null);
 
-        CsvReportGenerator.Generate(filePath, [], []);
+        CsvReportGenerator.Generate(filePath, [], [], args);
 
         Assert.True(File.Exists(filePath));
     }
@@ -100,8 +105,9 @@ public class CsvReportGeneratorTests : IDisposable
         {
             new("TestPkg", "2.0.0", "ProjX", new VersionEntry("2.0.0", "https://example.com", "Apache-2.0", "2024-01-15", null, null), new VersionEntry("3.0.0", "https://example.com/latest", "Apache-2.0", "2024-06-01", null, null)),
         };
+        var args = new ParsedArguments(["./"], ["csv"], null);
 
-        CsvReportGenerator.Generate(filePath, packages, []);
+        CsvReportGenerator.Generate(filePath, packages, [], args);
 
         var line = File.ReadAllLines(filePath)[0];
         Assert.Equal("TestPkg,2.0.0,\"2.0.0\",\"Apache-2.0\",\"2024-01-15\",\"\",\"\",\"3.0.0\",\"Apache-2.0\",\"2024-06-01\",\"\",\"\",\"https://example.com\",\"https://example.com/latest\",\"ProjX\"", line);

@@ -2,7 +2,7 @@ namespace CheckNugetPackages;
 
 public static class MarkdownReportGenerator
 {
-    public static void Generate(string filePath, string reportTitle, List<PackageEntry> packages, List<string> ignoredPackages)
+    public static void Generate(string filePath, string reportTitle, List<PackageEntry> packages, List<string> ignoredPackages, ParsedArguments arguments)
     {
         var directory = Path.GetDirectoryName(filePath);
         if (!string.IsNullOrEmpty(directory))
@@ -16,8 +16,24 @@ public static class MarkdownReportGenerator
         streamWriter.WriteLine();
         streamWriter.WriteLine($"Generated on: {DateTime.Now:yyyy-MM-dd HH:mm:ss zzz}");
         streamWriter.WriteLine();
-        streamWriter.WriteLine("| Name | Version | Resolved Version | License | Published Date | Deprecated | Vulnerabilities | Latest Version | Latest License | Latest Published Date | Latest Deprecated | Latest Vulnerabilities | Projects |");
-        streamWriter.WriteLine("| ---- | ------- | ---------------- | ------- | -------------- | ---------- | --------------- | -------------- | -------------- | --------------------- | ----------------- | ---------------------- | -------- |");
+        
+        var headerLine = "| Name | Version | Resolved Version | License | Published Date | Deprecated | Vulnerabilities | Latest Version | Latest License | Latest Published Date | Latest Deprecated | Latest Vulnerabilities |";
+        if (arguments.CheckLatestPatch)
+            headerLine += " Latest Patch Version | Latest Patch License | Latest Patch Published Date | Latest Patch Deprecated | Latest Patch Vulnerabilities |";
+        if (arguments.CheckLatestMinor)
+            headerLine += " Latest Minor Version | Latest Minor License | Latest Minor Published Date | Latest Minor Deprecated | Latest Minor Vulnerabilities |";
+        headerLine += " Projects |";
+        
+        streamWriter.WriteLine(headerLine);
+        
+        var separatorLine = "| ---- | ------- | ---------------- | ------- | -------------- | ---------- | --------------- | -------------- | -------------- | --------------------- | ----------------- | ---------------------- |";
+        if (arguments.CheckLatestPatch)
+            separatorLine += " -------------------- | -------------------- | ----------------------------- | ----------------------- | ----------------------------- |";
+        if (arguments.CheckLatestMinor)
+            separatorLine += " -------------------- | -------------------- | ----------------------------- | ----------------------- | ----------------------------- |";
+        separatorLine += " -------- |";
+        
+        streamWriter.WriteLine(separatorLine);
 
         foreach (var package in packages)
         {
@@ -40,7 +56,35 @@ public static class MarkdownReportGenerator
             var latestDeprecatedMd = EscapeMarkdown(package.LatestVersion.Deprecated ?? "");
             var latestVulnerabilitiesMd = EscapeMarkdown(package.LatestVersion.Vulnerabilities ?? "");
 
-            streamWriter.WriteLine($"| {EscapeMarkdown(package.Name)} | {versionMd} | {resolvedVersionMd} | {licenseMd} | {publishedDateMd} | {deprecatedMd} | {vulnerabilitiesMd} | {latestVersionMd} | {latestLicenseMd} | {latestPublishedDateMd} | {latestDeprecatedMd} | {latestVulnerabilitiesMd} | {EscapeMarkdown(package.Projects)} |");
+            var line = $"| {EscapeMarkdown(package.Name)} | {versionMd} | {resolvedVersionMd} | {licenseMd} | {publishedDateMd} | {deprecatedMd} | {vulnerabilitiesMd} | {latestVersionMd} | {latestLicenseMd} | {latestPublishedDateMd} | {latestDeprecatedMd} | {latestVulnerabilitiesMd} |";
+            
+            if (arguments.CheckLatestPatch)
+            {
+                var patchVersionMd = package.LatestPatchVersion?.Url != null
+                    ? $"[{EscapeMarkdown(package.LatestPatchVersion.Version ?? "N/A")}]({package.LatestPatchVersion.Url})"
+                    : EscapeMarkdown(package.LatestPatchVersion?.Version ?? "N/A");
+                var patchLicenseMd = FormatLicenseMarkdown(package.LatestPatchVersion?.License);
+                var patchPublishedDateMd = EscapeMarkdown(package.LatestPatchVersion?.PublishedDate ?? "N/A");
+                var patchDeprecatedMd = EscapeMarkdown(package.LatestPatchVersion?.Deprecated ?? "");
+                var patchVulnerabilitiesMd = EscapeMarkdown(package.LatestPatchVersion?.Vulnerabilities ?? "");
+                line += $" {patchVersionMd} | {patchLicenseMd} | {patchPublishedDateMd} | {patchDeprecatedMd} | {patchVulnerabilitiesMd} |";
+            }
+            
+            if (arguments.CheckLatestMinor)
+            {
+                var minorVersionMd = package.LatestMinorVersion?.Url != null
+                    ? $"[{EscapeMarkdown(package.LatestMinorVersion.Version ?? "N/A")}]({package.LatestMinorVersion.Url})"
+                    : EscapeMarkdown(package.LatestMinorVersion?.Version ?? "N/A");
+                var minorLicenseMd = FormatLicenseMarkdown(package.LatestMinorVersion?.License);
+                var minorPublishedDateMd = EscapeMarkdown(package.LatestMinorVersion?.PublishedDate ?? "N/A");
+                var minorDeprecatedMd = EscapeMarkdown(package.LatestMinorVersion?.Deprecated ?? "");
+                var minorVulnerabilitiesMd = EscapeMarkdown(package.LatestMinorVersion?.Vulnerabilities ?? "");
+                line += $" {minorVersionMd} | {minorLicenseMd} | {minorPublishedDateMd} | {minorDeprecatedMd} | {minorVulnerabilitiesMd} |";
+            }
+            
+            line += $" {EscapeMarkdown(package.Projects)} |";
+            
+            streamWriter.WriteLine(line);
         }
     }
 

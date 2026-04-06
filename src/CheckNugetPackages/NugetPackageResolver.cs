@@ -6,7 +6,11 @@ using System.Text.Json.Serialization;
 
 namespace CheckNugetPackages;
 
-public record PackageInfo(VersionEntry ResolvedVersion, VersionEntry LatestVersion);
+public record PackageInfo(
+    VersionEntry ResolvedVersion,
+    VersionEntry LatestVersion,
+    VersionEntry? LatestPatchVersion = null,
+    VersionEntry? LatestMinorVersion = null);
 
 public static class NugetPackageResolver
 {
@@ -155,9 +159,57 @@ public static class NugetPackageResolver
                 latestVulnerabilities = FormatVulnerabilities(latestEntry.Vulnerabilities);
             }
 
+            // Determine the latest patch and minor versions
+            VersionEntry? latestPatchVersionEntry = null;
+            VersionEntry? latestMinorVersionEntry = null;
+
+            if (!string.IsNullOrWhiteSpace(resolvedVersion) && NuGetVersion.TryParse(resolvedVersion, out var resolvedNugetVersion))
+            {
+                // Find latest patch version (same major.minor, highest patch)
+                var patchCandidate = allEntries
+                    .Where(e => !IsPrerelease(e.Entry.Version) &&
+                                NuGetVersion.TryParse(e.Entry.Version, out var v) &&
+                                v.Major == resolvedNugetVersion.Major &&
+                                v.Minor == resolvedNugetVersion.Minor &&
+                                e.Entry.Listed != false)
+                    .OrderByDescending(e => NuGetVersion.Parse(e.Entry.Version))
+                    .FirstOrDefault();
+
+                if (patchCandidate.Entry != null)
+                {
+                    var patchVersionStr = NormalizeVersion(patchCandidate.Entry.Version);
+                    var patchLicense = !string.IsNullOrEmpty(patchCandidate.Entry.LicenseExpression) ? patchCandidate.Entry.LicenseExpression : patchCandidate.Entry.LicenseUrl;
+                    var patchPublishedDate = patchCandidate.Entry.Published?.ToString("yyyy-MM-dd");
+                    var patchDeprecated = FormatDeprecation(patchCandidate.Entry.Deprecation);
+                    var patchVulnerabilities = FormatVulnerabilities(patchCandidate.Entry.Vulnerabilities);
+                    latestPatchVersionEntry = new VersionEntry(patchVersionStr, BuildPackageUrl(packageName, patchVersionStr), patchLicense, patchPublishedDate, patchDeprecated, patchVulnerabilities);
+                }
+
+                // Find latest minor version (same major, highest minor.patch)
+                var minorCandidate = allEntries
+                    .Where(e => !IsPrerelease(e.Entry.Version) &&
+                                NuGetVersion.TryParse(e.Entry.Version, out var v) &&
+                                v.Major == resolvedNugetVersion.Major &&
+                                e.Entry.Listed != false)
+                    .OrderByDescending(e => NuGetVersion.Parse(e.Entry.Version))
+                    .FirstOrDefault();
+
+                if (minorCandidate.Entry != null)
+                {
+                    var minorVersionStr = NormalizeVersion(minorCandidate.Entry.Version);
+                    var minorLicense = !string.IsNullOrEmpty(minorCandidate.Entry.LicenseExpression) ? minorCandidate.Entry.LicenseExpression : minorCandidate.Entry.LicenseUrl;
+                    var minorPublishedDate = minorCandidate.Entry.Published?.ToString("yyyy-MM-dd");
+                    var minorDeprecated = FormatDeprecation(minorCandidate.Entry.Deprecation);
+                    var minorVulnerabilities = FormatVulnerabilities(minorCandidate.Entry.Vulnerabilities);
+                    latestMinorVersionEntry = new VersionEntry(minorVersionStr, BuildPackageUrl(packageName, minorVersionStr), minorLicense, minorPublishedDate, minorDeprecated, minorVulnerabilities);
+                }
+            }
+
             return new PackageInfo(
                 new VersionEntry(resolvedVersion, BuildPackageUrl(packageName, resolvedVersion), license, publishedDate, deprecated, vulnerabilities),
-                new VersionEntry(latestVersion, BuildPackageUrl(packageName, latestVersion), latestLicense, latestPublishedDate, latestDeprecated, latestVulnerabilities));
+                new VersionEntry(latestVersion, BuildPackageUrl(packageName, latestVersion), latestLicense, latestPublishedDate, latestDeprecated, latestVulnerabilities),
+                latestPatchVersionEntry,
+                latestMinorVersionEntry);
         }
         catch (Exception ex)
         {
