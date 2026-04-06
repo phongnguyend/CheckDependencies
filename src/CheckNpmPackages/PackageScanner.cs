@@ -34,14 +34,14 @@ public class PackageScanner
                     string.Join(", ", g.Select(x => x.Project)),
                     new VersionEntry(
                         resolvedVersion,
-                        $"https://www.npmjs.com/package/{g.Key.Name}/v/{resolvedVersion}",
+                        info?.ResolvedVersion.Url,
                         info?.ResolvedVersion.License,
                         info?.ResolvedVersion.PublishedDate,
                         info?.ResolvedVersion.Deprecated,
                         info?.ResolvedVersion.Vulnerabilities),
                     new VersionEntry(
                         latestVersion,
-                        latestVersion != null ? $"https://www.npmjs.com/package/{g.Key.Name}/v/{latestVersion}" : null,
+                        info?.LatestVersion.Url,
                         info?.LatestVersion.License,
                         info?.LatestVersion.PublishedDate,
                         info?.LatestVersion.Deprecated,

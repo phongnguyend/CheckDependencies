@@ -156,8 +156,8 @@ public static class NugetPackageResolver
             }
 
             return new PackageInfo(
-                new VersionEntry(resolvedVersion, null, license, publishedDate, deprecated, vulnerabilities),
-                new VersionEntry(latestVersion, null, latestLicense, latestPublishedDate, latestDeprecated, latestVulnerabilities));
+                new VersionEntry(resolvedVersion, BuildPackageUrl(packageName, resolvedVersion), license, publishedDate, deprecated, vulnerabilities),
+                new VersionEntry(latestVersion, BuildPackageUrl(packageName, latestVersion), latestLicense, latestPublishedDate, latestDeprecated, latestVulnerabilities));
         }
         catch (Exception ex)
         {
@@ -170,6 +170,13 @@ public static class NugetPackageResolver
     private static string? NormalizeVersion(string? version)
     {
         return !string.IsNullOrEmpty(version) ? NuGetVersion.Parse(version).ToNormalizedString() : version;
+    }
+
+    private static string? BuildPackageUrl(string packageName, string? version)
+    {
+        if (string.IsNullOrWhiteSpace(version))
+            return null;
+        return $"https://www.nuget.org/packages/{packageName}/{version}";
     }
 
     internal static string? FormatDeprecation(DeprecationInfo? deprecation)

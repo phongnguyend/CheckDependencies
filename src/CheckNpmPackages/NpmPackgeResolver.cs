@@ -195,14 +195,14 @@ public static class NpmPackgeResolver
             return new PackageInfo(
                 new VersionEntry(
                     !string.IsNullOrEmpty(resolvedVersion) ? resolvedVersion : null,
-                    null,
+                    BuildPackageUrl(packageName, resolvedVersion),
                     !string.IsNullOrEmpty(license) ? license : null,
                     publishedDate,
                     deprecated,
                     null),
                 new VersionEntry(
                     latestVersion,
-                    null,
+                    BuildPackageUrl(packageName, latestVersion),
                     !string.IsNullOrEmpty(latestLicense) ? latestLicense : null,
                     latestPublishedDate,
                     latestDeprecated,
@@ -214,6 +214,13 @@ public static class NpmPackgeResolver
         }
 
         return new PackageInfo(new VersionEntry(null, null, null, null, null, null), new VersionEntry(null, null, null, null, null, null));
+    }
+
+    private static string? BuildPackageUrl(string packageName, string? version)
+    {
+        if (string.IsNullOrWhiteSpace(version))
+            return null;
+        return $"https://www.npmjs.com/package/{packageName}/v/{version}";
     }
 
     private static string? ExtractDeprecated(JsonElement versionDoc)

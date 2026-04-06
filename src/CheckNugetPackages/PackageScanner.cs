@@ -35,14 +35,14 @@ public class PackageScanner
                     string.Join(", ", g.Select(x => x.Project)),
                     new VersionEntry(
                         resolvedVersion,
-                        $"https://www.nuget.org/packages/{g.Key.Name}/{resolvedVersion}",
+                        info?.ResolvedVersion.Url,
                         info?.ResolvedVersion.License,
                         info?.ResolvedVersion.PublishedDate,
                         info?.ResolvedVersion.Deprecated,
                         info?.ResolvedVersion.Vulnerabilities),
                     new VersionEntry(
                         latestVersion,
-                        latestVersion != null ? $"https://www.nuget.org/packages/{g.Key.Name}/{latestVersion}" : null,
+                        info?.LatestVersion.Url,
                         info?.LatestVersion.License,
                         info?.LatestVersion.PublishedDate,
                         info?.LatestVersion.Deprecated,

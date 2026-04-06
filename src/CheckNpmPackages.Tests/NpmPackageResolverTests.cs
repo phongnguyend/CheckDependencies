@@ -19,6 +19,24 @@ public class NpmPackageResolverTests
     }
 
     [Fact]
+    public async Task GetPackagesInfoAsync_KnownPackage_ReturnsPackageUrls()
+    {
+        var packages = new List<(string Name, string Version, string? ResolvedVersion)>
+        {
+            ("lodash", "4.17.21", null),
+        };
+
+        var results = await NpmPackgeResolver.GetPackagesInfoAsync(packages);
+
+        Assert.Single(results);
+        var info = results[("lodash", "4.17.21", null)];
+        Assert.NotNull(info.ResolvedVersion.Url);
+        Assert.Contains("https://www.npmjs.com/package/lodash", info.ResolvedVersion.Url);
+        Assert.NotNull(info.LatestVersion.Url);
+        Assert.Contains("https://www.npmjs.com/package/lodash", info.LatestVersion.Url);
+    }
+
+    [Fact]
     public async Task GetPackagesInfoAsync_KnownPackage_ReturnsLatestVersionInfo()
     {
         var packages = new List<(string Name, string Version, string? ResolvedVersion)>

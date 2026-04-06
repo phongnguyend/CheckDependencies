@@ -19,6 +19,24 @@ public class NugetPackageResolverTests
     }
 
     [Fact]
+    public async Task GetPackagesInfoAsync_KnownPackage_ReturnsPackageUrls()
+    {
+        var packages = new List<(string Name, string Version)>
+        {
+            ("Newtonsoft.Json", "13.0.3"),
+        };
+
+        var results = await NugetPackageResolver.GetPackagesInfoAsync(packages);
+
+        Assert.Single(results);
+        var info = results[("Newtonsoft.Json", "13.0.3")];
+        Assert.NotNull(info.ResolvedVersion.Url);
+        Assert.Contains("https://www.nuget.org/packages/Newtonsoft.Json/", info.ResolvedVersion.Url);
+        Assert.NotNull(info.LatestVersion.Url);
+        Assert.Contains("https://www.nuget.org/packages/Newtonsoft.Json/", info.LatestVersion.Url);
+    }
+
+    [Fact]
     public async Task GetPackagesInfoAsync_KnownPackage_ReturnsLatestVersionInfo()
     {
         var packages = new List<(string Name, string Version)>
