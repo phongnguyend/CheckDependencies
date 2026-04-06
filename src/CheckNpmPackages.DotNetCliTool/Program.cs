@@ -2,4 +2,9 @@
 
 var parsedArgs = CommandLineParser.ParseParameters(args);
 var packageGroups = await PackageScanner.RunAsync(parsedArgs);
-ReportsWriter.Write(packageGroups, parsedArgs);
+var generatedReports = ReportsWriter.Write(packageGroups, parsedArgs);
+
+foreach (var report in generatedReports)
+{
+    Console.WriteLine($"Report generated: {report}");
+}

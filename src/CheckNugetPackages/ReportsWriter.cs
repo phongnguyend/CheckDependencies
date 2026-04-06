@@ -2,13 +2,15 @@ namespace CheckNugetPackages;
 
 public static class ReportsWriter
 {
-    public static void Write(List<PackageEntry> packageGroups, ParsedArguments arguments)
+    public static List<string> Write(List<PackageEntry> packageGroups, ParsedArguments arguments)
     {
         var ignoredPackages = new List<string>
         {
             //"System.",
             //"Microsoft."
         };
+
+        var generatedReports = new List<string>();
 
         // Generate CSV file if requested
         if (arguments.ReportTypes.Contains("csv"))
@@ -18,6 +20,7 @@ public static class ReportsWriter
                 : Path.Combine(arguments.ReportDirectory, "packages.csv");
 
             CsvReportGenerator.Generate(csvPath, packageGroups, ignoredPackages, arguments);
+            generatedReports.Add(csvPath);
         }
 
         // Generate HTML file if requested
@@ -28,6 +31,7 @@ public static class ReportsWriter
                 : Path.Combine(arguments.ReportDirectory, "packages.html");
 
             HtmlReportGenerator.Generate(htmlPath, "NuGet Packages Report", packageGroups, ignoredPackages, arguments);
+            generatedReports.Add(htmlPath);
         }
 
         // Generate Markdown file if requested
@@ -38,6 +42,9 @@ public static class ReportsWriter
                 : Path.Combine(arguments.ReportDirectory, "packages.md");
 
             MarkdownReportGenerator.Generate(mdPath, "NuGet Packages Report", packageGroups, ignoredPackages, arguments);
+            generatedReports.Add(mdPath);
         }
+
+        return generatedReports;
     }
 }

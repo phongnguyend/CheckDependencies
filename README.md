@@ -274,12 +274,17 @@ The `CheckNugetPackages.DotNetMcpTool` exposes a `CheckNugetPackages` MCP tool t
 **Tool Name:** `CheckNugetPackages`
 
 **Parameters:**
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| `directories` | `string[]` | No | One or more directory paths to scan for NuGet packages. If not provided, scans current directory. |
-| `reportTypes` | `string[]` | No | Report types to generate (valid values: `csv`, `html`, `md`). If not provided, generates CSV, HTML, and Markdown reports. |
-| `reportDirectory` | `string` | No | Directory where reports will be saved. If not provided, saves to current directory. |
-| `includeTransitive` | `bool` | No | When `true`, scans `project.assets.json` for all direct and transitive dependencies instead of only scanning `.csproj` files. Defaults to `false`. |
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `directories` | `string[]` | No | Current directory | One or more directory paths to scan for NuGet packages. If not provided, scans current directory. |
+| `reportTypes` | `string[]` | No | `["csv", "html", "md"]` | Report types to generate (valid values: `csv`, `html`, `md`). If not provided, generates CSV, HTML, and Markdown reports. |
+| `reportDirectory` | `string` | No | Current directory | Directory where reports will be saved. If not provided, saves to current directory. |
+| `includeTransitive` | `bool` | No | `false` | When `true`, scans `project.assets.json` for all direct and transitive dependencies instead of only scanning `.csproj` files. |
+| `writeReports` | `bool` | No | `true` | When `true`, generates and writes report files. When `false`, only returns package data without writing files. |
+
+**Return Type:** `GeneratedReports`
+- `Packages` - List of scanned package entries
+- `ReportPaths` - List of file paths where reports were generated (empty list if `writeReports` is `false`)
 
 #### MCP Configuration Example
 
@@ -303,12 +308,17 @@ The `CheckNpmPackages.DotNetMcpTool` exposes a `CheckNpmPackages` MCP tool that 
 **Tool Name:** `CheckNpmPackages`
 
 **Parameters:**
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| `directories` | `string[]` | No | One or more directory paths to scan for npm packages. If not provided, scans current directory. |
-| `reportTypes` | `string[]` | No | Report types to generate (valid values: `csv`, `html`, `md`). If not provided, generates CSV, HTML, and Markdown reports. |
-| `reportDirectory` | `string` | No | Directory where reports will be saved. If not provided, saves to current directory. |
-| `includeTransitive` | `bool` | No | When `true`, scans `package-lock.json` for all direct and transitive dependencies instead of only scanning `package.json`. Defaults to `false`. |
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `directories` | `string[]` | No | Current directory | One or more directory paths to scan for npm packages. If not provided, scans current directory. |
+| `reportTypes` | `string[]` | No | `["csv", "html", "md"]` | Report types to generate (valid values: `csv`, `html`, `md`). If not provided, generates CSV, HTML, and Markdown reports. |
+| `reportDirectory` | `string` | No | Current directory | Directory where reports will be saved. If not provided, saves to current directory. |
+| `includeTransitive` | `bool` | No | `false` | When `true`, scans `package-lock.json` for all direct and transitive dependencies instead of only scanning `package.json`. |
+| `writeReports` | `bool` | No | `true` | When `true`, generates and writes report files. When `false`, only returns package data without writing files. |
+
+**Return Type:** `GeneratedReports`
+- `Packages` - List of scanned package entries
+- `ReportPaths` - List of file paths where reports were generated (empty list if `writeReports` is `false`)
 
 #### MCP Configuration Example
 
@@ -324,6 +334,22 @@ To configure the CheckNpmPackages MCP tool in your MCP client (e.g., VS Code), a
   }
 }
 ```
+
+#### Additional MCP Tools
+
+Both CheckNugetPackages and CheckNpmPackages MCP tools also expose the following additional tools for retrieving package version information:
+
+**GetNugetPackageVersion / GetNpmPackageVersion**
+- Get information about a specific version of a package, including license, published date, deprecation, and vulnerability status.
+
+**GetNugetPackageLatestVersion / GetNpmPackageLatestVersion**
+- Get information about the latest version of a package.
+
+**GetNugetPackageLatestPatchVersion / GetNpmPackageLatestPatchVersion**
+- Get information about the latest patch version of a package (latest version with the same major and minor version numbers).
+
+**GetNugetPackageLatestMinorVersion / GetNpmPackageLatestMinorVersion**
+- Get information about the latest minor version of a package (latest version with the same major version number).
 
 ## Use Cases
 

@@ -7,7 +7,7 @@ namespace CheckNugetPackages.DotNetMcpTool;
 public class CheckNugetPackagesTool
 {
     [McpServerTool(Name = "CheckNugetPackages"), Description("Scan and generate reports for Nuget package dependencies in projects")]
-    public static async Task<List<PackageEntry>> ProcessAsync(
+    public static async Task<GeneratedReports> ProcessAsync(
         [Description("One or more directory paths to scan for NuGet packages. If not provided, scans current directory.")] 
         string[]? directories = null,
         [Description("Report types to generate (valid values: csv, html, md). If not provided, generates CSV, HTML, and Markdown reports.")] 
@@ -15,7 +15,9 @@ public class CheckNugetPackagesTool
         [Description("Directory where reports will be saved. If not provided, saves to current directory.")] 
         string? reportDirectory = null,
         [Description("When true, scans project.assets.json for all direct and transitive dependencies instead of only scanning .csproj files.")] 
-        bool includeTransitive = false)
+        bool includeTransitive = false,
+        [Description("When true, generates and writes report files. When false, only returns package data without writing files.")] 
+        bool writeReports = true)
     {
         var parsedArgs = new ParsedArguments(
             Directories: directories?.ToList() ?? [Directory.GetCurrentDirectory()],
@@ -25,8 +27,10 @@ public class CheckNugetPackagesTool
         );
         
         var packageGroups = await PackageScanner.RunAsync(parsedArgs);
-        ReportsWriter.Write(packageGroups, parsedArgs);
-        return packageGroups;
+        var generatedReportPaths = writeReports 
+            ? ReportsWriter.Write(packageGroups, parsedArgs)
+            : new List<string>();
+        return new GeneratedReports(packageGroups, generatedReportPaths);
     }
 
     [McpServerTool(Name = "GetNugetPackageVersion"), Description("Get information about a specific version of a NuGet package, including license, published date, deprecation and vulnerability status")]
