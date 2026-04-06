@@ -7,6 +7,7 @@ public record ParsedArguments(
     bool IncludeTransitive = false,
     bool CheckLatestPatch = false,
     bool CheckLatestMinor = false,
+    bool CheckLatest = false,
     bool IncludePrerelease = false);
 
 public static class CommandLineParser
@@ -19,6 +20,7 @@ public static class CommandLineParser
         bool includeTransitive = false;
         bool checkLatestPatch = false;
         bool checkLatestMinor = false;
+        bool checkLatest = false;
         bool includePrerelease = false;
 
         // Default directories if no arguments provided
@@ -104,6 +106,11 @@ public static class CommandLineParser
                 checkLatestMinor = true;
                 i++;
             }
+            else if (param == "--check-latest")
+            {
+                checkLatest = true;
+                i++;
+            }
             else if (param == "--include-prerelease")
             {
                 includePrerelease = true;
@@ -122,6 +129,6 @@ public static class CommandLineParser
             reportTypes.AddRange(defaultReportTypes);
         }
 
-        return new ParsedArguments(directories, reportTypes, reportDirectory, includeTransitive, checkLatestPatch, checkLatestMinor, includePrerelease);
+        return new ParsedArguments(directories, reportTypes, reportDirectory, includeTransitive, checkLatestPatch, checkLatestMinor, checkLatest, includePrerelease);
     }
 }

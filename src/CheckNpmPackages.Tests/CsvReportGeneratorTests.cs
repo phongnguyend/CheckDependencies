@@ -20,12 +20,12 @@ public class CsvReportGeneratorTests : IDisposable
     public void Generate_WritesHeader()
     {
         var filePath = Path.Combine(_tempDir, "packages.csv");
-        var args = new ParsedArguments(["./"], ["csv"], null);
+        var args = new ParsedArguments(["./"], ["csv"], null, CheckLatest: true);
 
         CsvReportGenerator.Generate(filePath, [], [], args);
 
         var lines = File.ReadAllLines(filePath);
-        var expectedHeader = "Name,Version,Resolved Version,Resolved License,Resolved Published Date,Resolved Deprecated,Resolved Vulnerabilities,Latest Version,Latest License,Latest Published Date,Latest Deprecated,Latest Vulnerabilities,Resolved Url,Latest Url,Projects";
+        var expectedHeader = "Name,Version,Resolved Version,Resolved License,Resolved Published Date,Resolved Deprecated,Resolved Vulnerabilities,Resolved Url,Latest Version,Latest License,Latest Published Date,Latest Deprecated,Latest Vulnerabilities,Latest Url,Projects";
         Assert.Equal(expectedHeader, lines[0]);
     }
 
@@ -38,7 +38,7 @@ public class CsvReportGeneratorTests : IDisposable
             new("lodash", "4.17.21", "my-app", new VersionEntry("4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null), new VersionEntry("4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null)),
             new("express", "4.18.2", "my-api", new VersionEntry("4.18.2", "https://www.npmjs.com/package/express/v/4.18.2", "MIT", "2023-10-11", null, null), new VersionEntry("4.21.0", "https://www.npmjs.com/package/express/v/4.21.0", "MIT", "2024-09-11", null, null)),
         };
-        var args = new ParsedArguments(["./"], ["csv"], null);
+        var args = new ParsedArguments(["./"], ["csv"], null, CheckLatest: true);
 
         CsvReportGenerator.Generate(filePath, packages, [], args);
 
@@ -60,7 +60,7 @@ public class CsvReportGeneratorTests : IDisposable
             new("@types/node", "20.0.0", "my-app", new VersionEntry("20.0.0", "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("20.1.0", "https://example.com/latest", "MIT", "2024-02-01", null, null)),
             new("lodash", "4.17.21", "my-app", new VersionEntry("4.17.21", "https://example.com", "MIT", "2021-02-20", null, null), new VersionEntry("4.17.21", "https://example.com/latest", "MIT", "2021-02-20", null, null)),
         };
-        var args = new ParsedArguments(["./"], ["csv"], null);
+        var args = new ParsedArguments(["./"], ["csv"], null, CheckLatest: true);
 
         CsvReportGenerator.Generate(filePath, packages, ["@types/"], args);
 
@@ -77,7 +77,7 @@ public class CsvReportGeneratorTests : IDisposable
         {
             new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", null, null, null, null), new VersionEntry(null, null, null, null, null, null)),
         };
-        var args = new ParsedArguments(["./"], ["csv"], null);
+        var args = new ParsedArguments(["./"], ["csv"], null, CheckLatest: true);
 
         CsvReportGenerator.Generate(filePath, packages, [], args);
 
@@ -119,12 +119,52 @@ public class CsvReportGeneratorTests : IDisposable
         {
             new("test-pkg", "2.0.0", "proj-x", new VersionEntry("2.0.0", "https://example.com", "Apache-2.0", "2024-01-15", null, null), new VersionEntry("3.0.0", "https://example.com/latest", "Apache-2.0", "2024-06-01", null, null)),
         };
-        var args = new ParsedArguments(["./"], ["csv"], null);
+        var args = new ParsedArguments(["./"], ["csv"], null, CheckLatest: true);
 
         CsvReportGenerator.Generate(filePath, packages, [], args);
 
         var lines = File.ReadAllLines(filePath);
         var line = lines[1]; // second line is the data row (first line is header)
-        Assert.Equal("test-pkg,2.0.0,\"2.0.0\",\"Apache-2.0\",\"2024-01-15\",\"\",\"\",\"3.0.0\",\"Apache-2.0\",\"2024-06-01\",\"\",\"\",\"https://example.com\",\"https://example.com/latest\",\"proj-x\"", line);
+        Assert.Equal("test-pkg,2.0.0,\"2.0.0\",\"Apache-2.0\",\"2024-01-15\",\"\",\"\",\"https://example.com\",\"3.0.0\",\"Apache-2.0\",\"2024-06-01\",\"\",\"\",\"https://example.com/latest\",\"proj-x\"", line);
+    }
+
+    [Fact]
+    public void Generate_WithoutCheckLatest_ExcludesLatestVersionColumns()
+    {
+        var filePath = Path.Combine(_tempDir, "packages.csv");
+        var packages = new List<PackageEntry>
+        {
+            new("test-pkg", "2.0.0", "proj-x", new VersionEntry("2.0.0", "https://example.com", "Apache-2.0", "2024-01-15", null, null), new VersionEntry("3.0.0", "https://example.com/latest", "Apache-2.0", "2024-06-01", null, null)),
+        };
+        var args = new ParsedArguments(["./"], ["csv"], null, CheckLatest: false);
+
+        CsvReportGenerator.Generate(filePath, packages, [], args);
+
+        var lines = File.ReadAllLines(filePath);
+        var header = lines[0];
+        Assert.DoesNotContain("Latest Version", header);
+        Assert.DoesNotContain("Latest License", header);
+        Assert.Contains("Resolved Url", header);
+        Assert.Contains("Resolved Version", header);
+    }
+
+    [Fact]
+    public void Generate_WithCheckLatest_IncludesLatestVersionColumns()
+    {
+        var filePath = Path.Combine(_tempDir, "packages.csv");
+        var packages = new List<PackageEntry>
+        {
+            new("test-pkg", "2.0.0", "proj-x", new VersionEntry("2.0.0", "https://example.com", "Apache-2.0", "2024-01-15", null, null), new VersionEntry("3.0.0", "https://example.com/latest", "Apache-2.0", "2024-06-01", null, null)),
+        };
+        var args = new ParsedArguments(["./"], ["csv"], null, CheckLatest: true);
+
+        CsvReportGenerator.Generate(filePath, packages, [], args);
+
+        var lines = File.ReadAllLines(filePath);
+        var header = lines[0];
+        Assert.Contains("Latest Version", header);
+        Assert.Contains("Latest License", header);
+        Assert.Contains("Latest Url", header);
+        Assert.Contains("Resolved Url", header);
     }
 }

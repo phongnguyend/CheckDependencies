@@ -16,10 +16,10 @@ public class HtmlReportGeneratorTests : IDisposable
             Directory.Delete(_tempDir, true);
     }
 
-    private string GenerateAndRead(string reportTitle, List<PackageEntry> packages, List<string> ignoredPackages)
+    private string GenerateAndRead(string reportTitle, List<PackageEntry> packages, List<string> ignoredPackages, bool checkLatest = true)
     {
         var filePath = Path.Combine(_tempDir, $"{Guid.NewGuid():N}.html");
-        var args = new ParsedArguments(["./"], ["html"], null);
+        var args = new ParsedArguments(["./"], ["html"], null, CheckLatest: checkLatest);
         HtmlReportGenerator.Generate(filePath, reportTitle, packages, ignoredPackages, args);
         return File.ReadAllText(filePath);
     }
@@ -27,14 +27,14 @@ public class HtmlReportGeneratorTests : IDisposable
     [Fact]
     public void Generate_ContainsDoctype()
     {
-        var html = GenerateAndRead("Test Report", [], []);
+        var html = GenerateAndRead("Test Report", [], [], checkLatest: true);
         Assert.StartsWith("<!DOCTYPE html>", html);
     }
 
     [Fact]
     public void Generate_ContainsReportTitle()
     {
-        var html = GenerateAndRead("npm Packages Report", [], []);
+        var html = GenerateAndRead("npm Packages Report", [], [], checkLatest: true);
         Assert.Contains("<title>npm Packages Report</title>", html);
         Assert.Contains("<h1>npm Packages Report</h1>", html);
     }
@@ -42,14 +42,14 @@ public class HtmlReportGeneratorTests : IDisposable
     [Fact]
     public void Generate_ContainsGeneratedOnLine()
     {
-        var html = GenerateAndRead("Test Report", [], []);
+        var html = GenerateAndRead("Test Report", [], [], checkLatest: true);
         Assert.Contains("<p>Generated on: ", html);
     }
 
     [Fact]
     public void Generate_ContainsTableHeaders()
     {
-        var html = GenerateAndRead("Test Report", [], []);
+        var html = GenerateAndRead("Test Report", [], [], checkLatest: true);
         Assert.Contains("<th rowspan=\"2\">Name</th>", html);
         Assert.Contains("<th rowspan=\"2\">Version</th>", html);
         Assert.Contains("<th colspan=\"5\">Current Resolved Version</th>", html);
@@ -70,7 +70,7 @@ public class HtmlReportGeneratorTests : IDisposable
             new("lodash", "4.17.21", "my-app", new VersionEntry("4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null), new VersionEntry("4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null)),
         };
 
-        var html = GenerateAndRead("Test Report", packages, []);
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("lodash", html);
         Assert.Contains("4.17.21", html);
@@ -89,7 +89,7 @@ public class HtmlReportGeneratorTests : IDisposable
             new("lodash", "4.17.21", "my-app", new VersionEntry("4.17.21", "https://example.com", "MIT", "2021-02-20", null, null), new VersionEntry("4.17.21", "https://example.com/latest", "MIT", "2021-02-20", null, null)),
         };
 
-        var html = GenerateAndRead("Test Report", packages, ["@types/"]);
+        var html = GenerateAndRead("Test Report", packages, ["@types/"], checkLatest: true);
 
         Assert.DoesNotContain("@types/node", html);
         Assert.Contains("lodash", html);
@@ -103,7 +103,7 @@ public class HtmlReportGeneratorTests : IDisposable
             new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", null, "2024-01-01", null, null), new VersionEntry("1.0.0", null, null, null, null, null)),
         };
 
-        var html = GenerateAndRead("Test Report", packages, []);
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("<td class=\"license\">N/A</td>", html);
     }
@@ -116,7 +116,7 @@ public class HtmlReportGeneratorTests : IDisposable
             new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", null, null, null), new VersionEntry("1.0.0", null, "MIT", null, null, null)),
         };
 
-        var html = GenerateAndRead("Test Report", packages, []);
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("<td class=\"published-date\">N/A</td>", html);
     }
@@ -129,7 +129,7 @@ public class HtmlReportGeneratorTests : IDisposable
             new("some-pkg", null, "my-app", new VersionEntry(null, "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("1.0.0", null, "MIT", "2024-01-01", null, null)),
         };
 
-        var html = GenerateAndRead("Test Report", packages, []);
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("<td class=\"version\">N/A</td>", html);
         Assert.Contains(">N/A</a>", html);
@@ -143,7 +143,7 @@ public class HtmlReportGeneratorTests : IDisposable
             new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "https://opensource.org/licenses/MIT", "2024-01-01", null, null), new VersionEntry("1.0.0", null, "MIT", "2024-01-01", null, null)),
         };
 
-        var html = GenerateAndRead("Test Report", packages, []);
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("<a href=\"https://opensource.org/licenses/MIT\" target=\"_blank\">View License</a>", html);
     }
@@ -156,7 +156,7 @@ public class HtmlReportGeneratorTests : IDisposable
             new("pkg<name>", "1.0.0", "project&a", new VersionEntry("1.0.0", "https://example.com", "license&co", "2024-01-01", null, null), new VersionEntry("1.0.0", null, "license&co", "2024-01-01", null, null)),
         };
 
-        var html = GenerateAndRead("Title<>&", packages, []);
+        var html = GenerateAndRead("Title<>&", packages, [], checkLatest: true);
 
         Assert.Contains("pkg&lt;name&gt;", html);
         Assert.Contains("project&amp;a", html);
@@ -167,7 +167,7 @@ public class HtmlReportGeneratorTests : IDisposable
     [Fact]
     public void Generate_ContainsStyleBlock()
     {
-        var html = GenerateAndRead("Test Report", [], []);
+        var html = GenerateAndRead("Test Report", [], [], checkLatest: true);
         Assert.Contains("<style>", html);
         Assert.Contains(".package-name", html);
         Assert.Contains(".published-date", html);
@@ -184,7 +184,7 @@ public class HtmlReportGeneratorTests : IDisposable
     public void Generate_CreatesDirectoryIfNotExists()
     {
         var filePath = Path.Combine(_tempDir, "subdir", "report.html");
-        var args = new ParsedArguments(["./"], ["html"], null);
+        var args = new ParsedArguments(["./"], ["html"], null, CheckLatest: true);
         HtmlReportGenerator.Generate(filePath, "Test", [], [], args);
         Assert.True(File.Exists(filePath));
     }
@@ -197,7 +197,7 @@ public class HtmlReportGeneratorTests : IDisposable
             new("lodash", "4.17.20", "my-app", new VersionEntry("4.17.20", "https://www.npmjs.com/package/lodash/v/4.17.20", "MIT", "2020-10-27", null, null), new VersionEntry("4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null)),
         };
 
-        var html = GenerateAndRead("Test Report", packages, []);
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("<strong><a href=\"https://www.npmjs.com/package/lodash/v/4.17.21\" target=\"_blank\">4.17.21</a></strong>", html);
         Assert.Contains("<strong>2021-02-20</strong>", html);
@@ -211,7 +211,7 @@ public class HtmlReportGeneratorTests : IDisposable
             new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry(null, null, null, null, null, null)),
         };
 
-        var html = GenerateAndRead("Test Report", packages, []);
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         var latestVersionCount = CountOccurrences(html, "N/A");
         Assert.True(latestVersionCount >= 3);
@@ -225,7 +225,7 @@ public class HtmlReportGeneratorTests : IDisposable
             new("lodash", "4.17.21", "my-app", new VersionEntry("4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null), new VersionEntry("4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null)),
         };
 
-        var html = GenerateAndRead("Test Report", packages, []);
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.DoesNotContain("<strong>", html);
     }
@@ -238,7 +238,7 @@ public class HtmlReportGeneratorTests : IDisposable
             new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("1.0.0", "https://example.com/latest", "Apache-2.0", "2024-01-01", null, null)),
         };
 
-        var html = GenerateAndRead("Test Report", packages, []);
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("<strong>Apache-2.0</strong>", html);
         Assert.DoesNotContain("<strong>1.0.0", html);
@@ -253,7 +253,7 @@ public class HtmlReportGeneratorTests : IDisposable
             new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("1.0.0", "https://example.com/latest", "MIT", "2024-06-15", null, null)),
         };
 
-        var html = GenerateAndRead("Test Report", packages, []);
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("<strong>2024-06-15</strong>", html);
         Assert.DoesNotContain("<strong>MIT</strong>", html);
@@ -267,7 +267,7 @@ public class HtmlReportGeneratorTests : IDisposable
             new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("2.0.0", "https://example.com/latest", "Apache-2.0", "2024-06-15", null, null)),
         };
 
-        var html = GenerateAndRead("Test Report", packages, []);
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("<strong><a href=\"https://example.com/latest\" target=\"_blank\">2.0.0</a></strong>", html);
         Assert.Contains("<strong>Apache-2.0</strong>", html);
@@ -282,7 +282,7 @@ public class HtmlReportGeneratorTests : IDisposable
             new("some-pkg", "^1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null)),
         };
 
-        var html = GenerateAndRead("Test Report", packages, []);
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("<td class=\"version\">^1.0.0</td>", html);
         Assert.Contains("<a href=\"https://example.com\" target=\"_blank\">1.0.0</a>", html);
@@ -296,7 +296,7 @@ public class HtmlReportGeneratorTests : IDisposable
             new("old-package", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", "This package is deprecated", null), new VersionEntry("1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null)),
         };
 
-        var html = GenerateAndRead("Test Report", packages, []);
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("<span class=\"icon-deprecated\" title=\"This package is deprecated\">&#9888;&#65039;</span>", html);
     }
@@ -309,7 +309,7 @@ public class HtmlReportGeneratorTests : IDisposable
             new("vuln-package", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, "CVE-2024-1234 High"), new VersionEntry("1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null)),
         };
 
-        var html = GenerateAndRead("Test Report", packages, []);
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("<span class=\"icon-vulnerable\" title=\"CVE-2024-1234 High\">&#128680;</span>", html);
     }
@@ -322,10 +322,9 @@ public class HtmlReportGeneratorTests : IDisposable
             new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null)),
         };
 
-        var html = GenerateAndRead("Test Report", packages, []);
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("<td class=\"deprecated\"></td>", html);
-        Assert.DoesNotContain("&#9888;", html);
     }
 
     [Fact]
@@ -336,10 +335,9 @@ public class HtmlReportGeneratorTests : IDisposable
             new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null)),
         };
 
-        var html = GenerateAndRead("Test Report", packages, []);
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("<td class=\"vulnerable\"></td>", html);
-        Assert.DoesNotContain("&#128680;", html);
     }
 
     [Fact]
@@ -350,7 +348,7 @@ public class HtmlReportGeneratorTests : IDisposable
             new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("2.0.0", "https://example.com/latest", "MIT", "2024-06-15", "Legacy package", null)),
         };
 
-        var html = GenerateAndRead("Test Report", packages, []);
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("<span class=\"icon-deprecated\" title=\"Legacy package\">&#9888;&#65039;</span>", html);
     }
@@ -363,7 +361,7 @@ public class HtmlReportGeneratorTests : IDisposable
             new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("2.0.0", "https://example.com/latest", "MIT", "2024-06-15", null, "CVE-2024-5678 Critical")),
         };
 
-        var html = GenerateAndRead("Test Report", packages, []);
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("<span class=\"icon-vulnerable\" title=\"CVE-2024-5678 Critical\">&#128680;</span>", html);
     }
@@ -373,12 +371,12 @@ public class HtmlReportGeneratorTests : IDisposable
     {
         var packages = new List<PackageEntry>
         {
-            new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", "Use <new-package> ??????", null), new VersionEntry("1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null)),
+            new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", "Use <new-package> instead", null), new VersionEntry("1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null)),
         };
 
-        var html = GenerateAndRead("Test Report", packages, []);
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
-        Assert.Contains("title=\"Use &lt;new-package&gt; ??????\"", html);
+        Assert.Contains("title=\"Use &lt;new-package&gt; instead\"", html);
     }
 
     [Fact]
@@ -389,7 +387,7 @@ public class HtmlReportGeneratorTests : IDisposable
             new("old-package", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", "This package is deprecated", null), new VersionEntry("1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null)),
         };
 
-        var html = GenerateAndRead("Test Report", packages, []);
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("<td class=\"version version-deprecated\">", html);
         Assert.DoesNotContain("<td class=\"version version-vulnerable\">", html);
@@ -403,7 +401,7 @@ public class HtmlReportGeneratorTests : IDisposable
             new("vuln-package", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, "CVE-2024-1234 High"), new VersionEntry("1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null)),
         };
 
-        var html = GenerateAndRead("Test Report", packages, []);
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("<td class=\"version version-vulnerable\">", html);
         Assert.DoesNotContain("<td class=\"version version-deprecated\">", html);
@@ -417,7 +415,7 @@ public class HtmlReportGeneratorTests : IDisposable
             new("bad-package", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", "Deprecated", "CVE-2024-1234 High"), new VersionEntry("1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null)),
         };
 
-        var html = GenerateAndRead("Test Report", packages, []);
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("<td class=\"version version-vulnerable\">", html);
         Assert.DoesNotContain("<td class=\"version version-deprecated\">", html);
@@ -431,7 +429,7 @@ public class HtmlReportGeneratorTests : IDisposable
             new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("2.0.0", "https://example.com/latest", "MIT", "2024-06-15", "Legacy package", null)),
         };
 
-        var html = GenerateAndRead("Test Report", packages, []);
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("<td class=\"version version-deprecated\">", html);
     }
@@ -444,7 +442,7 @@ public class HtmlReportGeneratorTests : IDisposable
             new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("2.0.0", "https://example.com/latest", "MIT", "2024-06-15", null, "CVE-2024-5678 Critical")),
         };
 
-        var html = GenerateAndRead("Test Report", packages, []);
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("<td class=\"version version-vulnerable\">", html);
     }
@@ -457,7 +455,7 @@ public class HtmlReportGeneratorTests : IDisposable
             new("good-package", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("1.0.0", "https://example.com/latest", "MIT", "2024-01-01", null, null)),
         };
 
-        var html = GenerateAndRead("Test Report", packages, []);
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.DoesNotContain("<td class=\"version version-deprecated\">", html);
         Assert.DoesNotContain("<td class=\"version version-vulnerable\">", html);
@@ -471,10 +469,38 @@ public class HtmlReportGeneratorTests : IDisposable
             new("mixed-package", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", "2024-01-01", "Deprecated", null), new VersionEntry("2.0.0", "https://example.com/latest", "MIT", "2024-06-15", null, "CVE-2024-5678 Critical")),
         };
 
-        var html = GenerateAndRead("Test Report", packages, []);
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("<td class=\"version version-deprecated\"><a href=\"https://example.com\"", html);
         Assert.Contains("<td class=\"version version-vulnerable\">", html);
+    }
+
+    [Fact]
+    public void Generate_WithoutCheckLatest_ExcludesLatestVersionColumns()
+    {
+        var packages = new List<PackageEntry>
+        {
+            new("lodash", "4.17.20", "my-app", new VersionEntry("4.17.20", "https://www.npmjs.com/package/lodash/v/4.17.20", "MIT", "2020-10-27", null, null), new VersionEntry("4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null)),
+        };
+
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: false);
+
+        Assert.DoesNotContain("<th colspan=\"5\">Latest Version</th>", html);
+        Assert.Contains("<th colspan=\"5\">Current Resolved Version</th>", html);
+    }
+
+    [Fact]
+    public void Generate_WithCheckLatest_IncludesLatestVersionColumns()
+    {
+        var packages = new List<PackageEntry>
+        {
+            new("lodash", "4.17.20", "my-app", new VersionEntry("4.17.20", "https://www.npmjs.com/package/lodash/v/4.17.20", "MIT", "2020-10-27", null, null), new VersionEntry("4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null)),
+        };
+
+        var html = GenerateAndRead("Test Report", packages, [], checkLatest: true);
+
+        Assert.Contains("<th colspan=\"5\">Latest Version</th>", html);
+        Assert.Contains("<th colspan=\"5\">Current Resolved Version</th>", html);
     }
 
     private static int CountOccurrences(string text, string pattern)

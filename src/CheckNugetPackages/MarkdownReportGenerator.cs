@@ -22,7 +22,9 @@ public static class MarkdownReportGenerator
             headerLine += " Latest Patch Version | Latest Patch License | Latest Patch Published Date | Latest Patch Deprecated | Latest Patch Vulnerabilities |";
         if (arguments.CheckLatestMinor)
             headerLine += " Latest Minor Version | Latest Minor License | Latest Minor Published Date | Latest Minor Deprecated | Latest Minor Vulnerabilities |";
-        headerLine += " Latest Version | Latest License | Latest Published Date | Latest Deprecated | Latest Vulnerabilities | Projects |";
+        if (arguments.CheckLatest)
+            headerLine += " Latest Version | Latest License | Latest Published Date | Latest Deprecated | Latest Vulnerabilities |";
+        headerLine += " Projects |";
         
         streamWriter.WriteLine(headerLine);
         
@@ -31,7 +33,9 @@ public static class MarkdownReportGenerator
             separatorLine += " -------------------- | -------------------- | ----------------------------- | ----------------------- | ----------------------------- |";
         if (arguments.CheckLatestMinor)
             separatorLine += " -------------------- | -------------------- | ----------------------------- | ----------------------- | ----------------------------- |";
-        separatorLine += " -------------- | -------------- | --------------------- | ----------------- | ---------------------- | -------- |";
+        if (arguments.CheckLatest)
+            separatorLine += " -------------- | -------------- | --------------------- | ----------------- | ---------------------- |";
+        separatorLine += " -------- |";
         
         streamWriter.WriteLine(separatorLine);
 
@@ -82,7 +86,12 @@ public static class MarkdownReportGenerator
                 line += $" {minorVersionMd} | {minorLicenseMd} | {minorPublishedDateMd} | {minorDeprecatedMd} | {minorVulnerabilitiesMd} |";
             }
             
-            line += $" {latestVersionMd} | {latestLicenseMd} | {latestPublishedDateMd} | {latestDeprecatedMd} | {latestVulnerabilitiesMd} | {EscapeMarkdown(package.Projects)} |";
+            if (arguments.CheckLatest)
+            {
+                line += $" {latestVersionMd} | {latestLicenseMd} | {latestPublishedDateMd} | {latestDeprecatedMd} | {latestVulnerabilitiesMd} |";
+            }
+            
+            line += $" {EscapeMarkdown(package.Projects)} |";
             
             streamWriter.WriteLine(line);
         }

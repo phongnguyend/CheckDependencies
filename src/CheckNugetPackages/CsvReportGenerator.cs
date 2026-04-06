@@ -13,12 +13,14 @@ public static class CsvReportGenerator
         using var fileStream = File.Open(filePath, FileMode.Create);
         using var streamWriter = new StreamWriter(fileStream);
         
-        var headerLine = "Name,Version,Resolved Version,Resolved License,Resolved Published Date,Resolved Deprecated,Resolved Vulnerabilities";
+        var headerLine = "Name,Version,Resolved Version,Resolved License,Resolved Published Date,Resolved Deprecated,Resolved Vulnerabilities,Resolved Url";
         if (arguments.CheckLatestPatch)
             headerLine += ",Latest Patch Version,Latest Patch License,Latest Patch Published Date,Latest Patch Deprecated,Latest Patch Vulnerabilities,Latest Patch Url";
         if (arguments.CheckLatestMinor)
             headerLine += ",Latest Minor Version,Latest Minor License,Latest Minor Published Date,Latest Minor Deprecated,Latest Minor Vulnerabilities,Latest Minor Url";
-        headerLine += ",Latest Version,Latest License,Latest Published Date,Latest Deprecated,Latest Vulnerabilities,Resolved Url,Latest Url,Projects";
+        if (arguments.CheckLatest)
+            headerLine += ",Latest Version,Latest License,Latest Published Date,Latest Deprecated,Latest Vulnerabilities,Latest Url";
+        headerLine += ",Projects";
         
         streamWriter.WriteLine(headerLine);
         
@@ -33,15 +35,9 @@ public static class CsvReportGenerator
             var publishedDateValue = package.ResolvedVersion.PublishedDate ?? "";
             var deprecatedValue = package.ResolvedVersion.Deprecated ?? "";
             var vulnerabilitiesValue = package.ResolvedVersion.Vulnerabilities ?? "";
-            var latestVersionValue = package.LatestVersion.Version ?? "";
-            var latestLicenseValue = package.LatestVersion.License ?? "";
-            var latestPublishedDateValue = package.LatestVersion.PublishedDate ?? "";
-            var latestDeprecatedValue = package.LatestVersion.Deprecated ?? "";
-            var latestVulnerabilitiesValue = package.LatestVersion.Vulnerabilities ?? "";
-            var latestUrlValue = package.LatestVersion.Url ?? "";
             var resolvedVersionValue = package.ResolvedVersion.Version ?? "";
             
-            var line = $"{package.Name},{package.Version},\"{resolvedVersionValue}\",\"{licenseValue}\",\"{publishedDateValue}\",\"{deprecatedValue}\",\"{vulnerabilitiesValue}\"";
+            var line = $"{package.Name},{package.Version},\"{resolvedVersionValue}\",\"{licenseValue}\",\"{publishedDateValue}\",\"{deprecatedValue}\",\"{vulnerabilitiesValue}\",\"{package.ResolvedVersion.Url}\"";
             
             if (arguments.CheckLatestPatch && package.LatestPatchVersion != null)
             {
@@ -65,7 +61,18 @@ public static class CsvReportGenerator
                 line += $",\"{latestMinorVersionValue}\",\"{latestMinorLicenseValue}\",\"{latestMinorPublishedDateValue}\",\"{latestMinorDeprecatedValue}\",\"{latestMinorVulnerabilitiesValue}\",\"{latestMinorUrlValue}\"";
             }
             
-            line += $",\"{latestVersionValue}\",\"{latestLicenseValue}\",\"{latestPublishedDateValue}\",\"{latestDeprecatedValue}\",\"{latestVulnerabilitiesValue}\",\"{package.ResolvedVersion.Url}\",\"{latestUrlValue}\",\"{package.Projects}\"";
+            if (arguments.CheckLatest)
+            {
+                var latestVersionValue = package.LatestVersion.Version ?? "";
+                var latestLicenseValue = package.LatestVersion.License ?? "";
+                var latestPublishedDateValue = package.LatestVersion.PublishedDate ?? "";
+                var latestDeprecatedValue = package.LatestVersion.Deprecated ?? "";
+                var latestVulnerabilitiesValue = package.LatestVersion.Vulnerabilities ?? "";
+                var latestUrlValue = package.LatestVersion.Url ?? "";
+                line += $",\"{latestVersionValue}\",\"{latestLicenseValue}\",\"{latestPublishedDateValue}\",\"{latestDeprecatedValue}\",\"{latestVulnerabilitiesValue}\",\"{latestUrlValue}\"";
+            }
+            
+            line += $",\"{package.Projects}\"";
             
             streamWriter.WriteLine(line);
         }

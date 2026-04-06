@@ -16,10 +16,10 @@ public class MarkdownReportGeneratorTests : IDisposable
             Directory.Delete(_tempDir, true);
     }
 
-    private string GenerateAndRead(string reportTitle, List<PackageEntry> packages, List<string> ignoredPackages)
+    private string GenerateAndRead(string reportTitle, List<PackageEntry> packages, List<string> ignoredPackages, bool checkLatest = true)
     {
         var filePath = Path.Combine(_tempDir, $"{Guid.NewGuid():N}.md");
-        var args = new ParsedArguments(["./"], ["md"], null);
+        var args = new ParsedArguments(["./"], ["md"], null, CheckLatest: checkLatest);
         MarkdownReportGenerator.Generate(filePath, reportTitle, packages, ignoredPackages, args);
         return File.ReadAllText(filePath);
     }
@@ -27,21 +27,21 @@ public class MarkdownReportGeneratorTests : IDisposable
     [Fact]
     public void Generate_ContainsReportTitle()
     {
-        var md = GenerateAndRead("npm Packages Report", [], []);
+        var md = GenerateAndRead("npm Packages Report", [], [], checkLatest: true);
         Assert.Contains("# npm Packages Report", md);
     }
 
     [Fact]
     public void Generate_ContainsGeneratedOnLine()
     {
-        var md = GenerateAndRead("Test Report", [], []);
+        var md = GenerateAndRead("Test Report", [], [], checkLatest: true);
         Assert.Contains("Generated on: ", md);
     }
 
     [Fact]
     public void Generate_ContainsTableHeaders()
     {
-        var md = GenerateAndRead("Test Report", [], []);
+        var md = GenerateAndRead("Test Report", [], [], checkLatest: true);
         Assert.Contains("| Name | Version | Resolved Version | License | Published Date | Deprecated | Vulnerabilities | Latest Version | Latest License | Latest Published Date | Latest Deprecated | Latest Vulnerabilities | Projects |", md);
         Assert.Contains("| ---- | ------- | ---------------- | ------- | -------------- | ---------- | --------------- | -------------- | -------------- | --------------------- | ----------------- | ---------------------- | -------- |", md);
     }
@@ -54,7 +54,7 @@ public class MarkdownReportGeneratorTests : IDisposable
             new("lodash", "4.17.21", "my-app", new VersionEntry("4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null), new VersionEntry("4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null)),
         };
 
-        var md = GenerateAndRead("Test Report", packages, []);
+        var md = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("lodash", md);
         Assert.Contains("[4.17.21](https://www.npmjs.com/package/lodash/v/4.17.21)", md);
@@ -72,7 +72,7 @@ public class MarkdownReportGeneratorTests : IDisposable
             new("lodash", "4.17.21", "my-app", new VersionEntry("4.17.21", "https://example.com", "MIT", "2021-02-20", null, null), new VersionEntry("4.17.21", "https://example.com/latest", "MIT", "2021-02-20", null, null)),
         };
 
-        var md = GenerateAndRead("Test Report", packages, ["@types/"]);
+        var md = GenerateAndRead("Test Report", packages, ["@types/"], checkLatest: true);
 
         Assert.DoesNotContain("@types/node", md);
         Assert.Contains("lodash", md);
@@ -86,7 +86,7 @@ public class MarkdownReportGeneratorTests : IDisposable
             new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", null, "2024-01-01", null, null), new VersionEntry("1.0.0", null, null, null, null, null)),
         };
 
-        var md = GenerateAndRead("Test Report", packages, []);
+        var md = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("| N/A |", md);
     }
@@ -99,7 +99,7 @@ public class MarkdownReportGeneratorTests : IDisposable
             new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "MIT", null, null, null), new VersionEntry("1.0.0", null, "MIT", null, null, null)),
         };
 
-        var md = GenerateAndRead("Test Report", packages, []);
+        var md = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         var lines = md.Split('\n');
         var dataLine = lines.First(l => l.Contains("some-pkg"));
@@ -114,7 +114,7 @@ public class MarkdownReportGeneratorTests : IDisposable
             new("some-pkg", null, "my-app", new VersionEntry(null, "https://example.com", "MIT", "2024-01-01", null, null), new VersionEntry("1.0.0", null, "MIT", "2024-01-01", null, null)),
         };
 
-        var md = GenerateAndRead("Test Report", packages, []);
+        var md = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("| N/A | [N/A](https://example.com) |", md);
     }
@@ -127,7 +127,7 @@ public class MarkdownReportGeneratorTests : IDisposable
             new("some-pkg", "1.0.0", "my-app", new VersionEntry("1.0.0", "https://example.com", "https://opensource.org/licenses/MIT", "2024-01-01", null, null), new VersionEntry("1.0.0", null, "MIT", "2024-01-01", null, null)),
         };
 
-        var md = GenerateAndRead("Test Report", packages, []);
+        var md = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("[View License](https://opensource.org/licenses/MIT)", md);
     }
@@ -140,7 +140,7 @@ public class MarkdownReportGeneratorTests : IDisposable
             new("pkg|name", "1.0.0", "project|a", new VersionEntry("1.0.0", "https://example.com", "MIT|BSD", "2024-01-01", null, null), new VersionEntry("1.0.0", null, "MIT|BSD", "2024-01-01", null, null)),
         };
 
-        var md = GenerateAndRead("Test Report", packages, []);
+        var md = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("pkg\\|name", md);
         Assert.Contains("project\\|a", md);
@@ -151,7 +151,7 @@ public class MarkdownReportGeneratorTests : IDisposable
     public void Generate_CreatesDirectoryIfNotExists()
     {
         var filePath = Path.Combine(_tempDir, "subdir", "report.md");
-        var args = new ParsedArguments(["./"], ["md"], null);
+        var args = new ParsedArguments(["./"], ["md"], null, CheckLatest: true);
         MarkdownReportGenerator.Generate(filePath, "Test", [], [], args);
         Assert.True(File.Exists(filePath));
     }
@@ -159,7 +159,7 @@ public class MarkdownReportGeneratorTests : IDisposable
     [Fact]
     public void Generate_EmptyPackageList_OnlyContainsHeaderAndTableStructure()
     {
-        var md = GenerateAndRead("Test Report", [], []);
+        var md = GenerateAndRead("Test Report", [], [], checkLatest: true);
         var lines = md.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         // Title, Generated on, table header, table separator = 4 lines
@@ -174,8 +174,38 @@ public class MarkdownReportGeneratorTests : IDisposable
             new("lodash", "4.17.20", "my-app", new VersionEntry("4.17.20", "https://www.npmjs.com/package/lodash/v/4.17.20", "MIT", "2020-10-27", null, null), new VersionEntry("4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null)),
         };
 
-        var md = GenerateAndRead("Test Report", packages, []);
+        var md = GenerateAndRead("Test Report", packages, [], checkLatest: true);
 
         Assert.Contains("[4.17.21](https://www.npmjs.com/package/lodash/v/4.17.21)", md);
+    }
+
+    [Fact]
+    public void Generate_WithoutCheckLatest_ExcludesLatestVersionColumns()
+    {
+        var packages = new List<PackageEntry>
+        {
+            new("lodash", "4.17.20", "my-app", new VersionEntry("4.17.20", "https://www.npmjs.com/package/lodash/v/4.17.20", "MIT", "2020-10-27", null, null), new VersionEntry("4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null)),
+        };
+
+        var md = GenerateAndRead("Test Report", packages, [], checkLatest: false);
+
+        Assert.DoesNotContain("Latest Version", md);
+        Assert.DoesNotContain("Latest License", md);
+        Assert.Contains("Resolved Version", md);
+    }
+
+    [Fact]
+    public void Generate_WithCheckLatest_IncludesLatestVersionColumns()
+    {
+        var packages = new List<PackageEntry>
+        {
+            new("lodash", "4.17.20", "my-app", new VersionEntry("4.17.20", "https://www.npmjs.com/package/lodash/v/4.17.20", "MIT", "2020-10-27", null, null), new VersionEntry("4.17.21", "https://www.npmjs.com/package/lodash/v/4.17.21", "MIT", "2021-02-20", null, null)),
+        };
+
+        var md = GenerateAndRead("Test Report", packages, [], checkLatest: true);
+
+        Assert.Contains("Latest Version", md);
+        Assert.Contains("Latest License", md);
+        Assert.Contains("Resolved Version", md);
     }
 }
