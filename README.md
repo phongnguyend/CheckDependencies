@@ -290,6 +290,7 @@ The `CheckNugetPackages.DotNetMcpTool` exposes a `CheckNugetPackages` MCP tool t
 | `reportTypes` | `string[]` | No | `["csv", "html", "md"]` | Report types to generate (valid values: `csv`, `html`, `md`). If not provided, generates CSV, HTML, and Markdown reports. |
 | `reportDirectory` | `string` | No | Current directory | Directory where reports will be saved. If not provided, saves to current directory. |
 | `includeTransitive` | `bool` | No | `false` | When `true`, scans `project.assets.json` for all direct and transitive dependencies instead of only scanning `.csproj` files. |
+| `includePrerelease` | `bool` | No | `false` | When `true`, includes prerelease versions (alpha, beta, rc, etc.) in package analysis. When `false`, only analyzes stable versions. |
 | `writeReports` | `bool` | No | `true` | When `true`, generates and writes report files. When `false`, only returns package data without writing files. |
 
 **Return Type:** `GeneratedReports`
@@ -324,6 +325,7 @@ The `CheckNpmPackages.DotNetMcpTool` exposes a `CheckNpmPackages` MCP tool that 
 | `reportTypes` | `string[]` | No | `["csv", "html", "md"]` | Report types to generate (valid values: `csv`, `html`, `md`). If not provided, generates CSV, HTML, and Markdown reports. |
 | `reportDirectory` | `string` | No | Current directory | Directory where reports will be saved. If not provided, saves to current directory. |
 | `includeTransitive` | `bool` | No | `false` | When `true`, scans `package-lock.json` for all direct and transitive dependencies instead of only scanning `package.json`. |
+| `includePrerelease` | `bool` | No | `false` | When `true`, includes prerelease versions (alpha, beta, rc, etc.) in package analysis. When `false`, only analyzes stable versions. |
 | `writeReports` | `bool` | No | `true` | When `true`, generates and writes report files. When `false`, only returns package data without writing files. |
 
 **Return Type:** `GeneratedReports`
