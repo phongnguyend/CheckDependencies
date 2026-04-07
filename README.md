@@ -417,7 +417,6 @@ This project is licensed under the terms specified in the LICENSE file.
 
 ## Links
 
-- [GitHub Repository](https://github.com/phongnguyend/CheckDependencies)
 - [Report Issues](https://github.com/phongnguyend/CheckDependencies/issues)
 - [CheckNugetPackages.DotNetCliTool on NuGet](https://www.nuget.org/packages/CheckNugetPackages.DotNetCliTool)
 - [CheckNpmPackages.DotNetCliTool on NuGet](https://www.nuget.org/packages/CheckNpmPackages.DotNetCliTool)

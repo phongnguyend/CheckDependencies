@@ -16,6 +16,8 @@ public class CheckNugetPackagesTool
         string? reportDirectory = null,
         [Description("When true, scans project.assets.json for all direct and transitive dependencies instead of only scanning .csproj files.")] 
         bool includeTransitive = false,
+        [Description("When true, includes prerelease versions in package analysis. When false, only analyzes stable versions.")]
+        bool includePrerelease = false,
         [Description("When true, generates and writes report files. When false, only returns package data without writing files.")] 
         bool writeReports = true)
     {
@@ -23,7 +25,8 @@ public class CheckNugetPackagesTool
             Directories: directories?.ToList() ?? [Directory.GetCurrentDirectory()],
             ReportTypes: reportTypes?.ToList() ?? ["csv", "html", "md"],
             ReportDirectory: reportDirectory,
-            IncludeTransitive: includeTransitive
+            IncludeTransitive: includeTransitive,
+            IncludePrerelease: includePrerelease
         );
         
         var packageGroups = await PackageScanner.RunAsync(parsedArgs);
