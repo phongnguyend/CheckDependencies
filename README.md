@@ -167,6 +167,13 @@ The tool generates the following files:
 - **packages.html** - HTML report with formatted table and links to NuGet.org
 - **packages.md** - Markdown report with table and links to NuGet.org
 
+**Upgrade Command Files** (when using `--check-latest-patch`, `--check-latest-minor`, or `--check-latest`):
+- **upgrade-to-latest-patch-commands.txt** - Contains `dotnet add package` commands for upgrading to the latest patch versions
+- **upgrade-to-latest-minor-commands.txt** - Contains `dotnet add package` commands for upgrading to the latest minor versions
+- **upgrade-to-latest-commands.txt** - Contains `dotnet add package` commands for upgrading to the latest versions
+
+These upgrade command files contain only packages that have a newer version available and can be executed to perform the upgrades.
+
 #### Sample CSV Output
 
 ```csv
@@ -264,6 +271,13 @@ CheckNpmPackages "C:\MyProject" --include-transitive --check-latest-patch --chec
 - **packages.csv** - CSV format with columns: Name, Version, License, URL, Projects
 - **packages.html** - HTML report with formatted table and links to npmjs.com
 - **packages.md** - Markdown report with table and links to npmjs.com
+
+**Upgrade Command Files** (when using `--check-latest-patch`, `--check-latest-minor`, or `--check-latest`):
+- **upgrade-to-latest-patch-commands.txt** - Contains `npm install` commands for upgrading to the latest patch versions
+- **upgrade-to-latest-minor-commands.txt** - Contains `npm install` commands for upgrading to the latest minor versions
+- **upgrade-to-latest-commands.txt** - Contains `npm install` commands for upgrading to the latest versions
+
+These upgrade command files contain only packages that have a newer version available and can be executed to perform the upgrades.
 
 #### Features
 
@@ -380,6 +394,46 @@ The reports group packages by name and version, making it easy to identify proje
 ### Package Upgrade Planning
 
 Use the HTML report with direct links to NuGet.org to quickly check for available updates and plan upgrade paths.
+
+### Generate Upgrade Commands
+
+Generate executable upgrade commands to streamline package updates:
+
+#### For NuGet Packages
+
+```bash
+# Generate upgrade commands for latest patch versions
+CheckNugetPackages "C:\MyProject" --check-latest-patch --report-directory "C:\Reports"
+
+# Then execute the commands
+# The file upgrade-to-latest-patch-commands.txt will contain:
+# dotnet add package Newtonsoft.Json --version 13.0.2
+# dotnet add package Microsoft.EntityFrameworkCore --version 8.0.1
+# ... etc
+```
+
+#### For npm Packages
+
+```bash
+# Generate upgrade commands for latest minor versions
+CheckNpmPackages "C:\MyProject\ClientApp" --check-latest-minor --report-directory "C:\Reports"
+
+# Then execute the commands
+# The file upgrade-to-latest-minor-commands.txt will contain:
+# npm install react@18.2.0
+# npm install lodash@4.17.21
+# ... etc
+```
+
+The upgrade command files are generated only when they contain packages with newer versions available. You can execute these files to automatically upgrade your dependencies:
+
+```bash
+# Execute NuGet upgrade commands (Windows)
+for /f %i in (upgrade-to-latest-patch-commands.txt) do %i
+
+# Execute npm upgrade commands
+cat upgrade-to-latest-minor-commands.txt | sh
+```
 
 ### Documentation
 

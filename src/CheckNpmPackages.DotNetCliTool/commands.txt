@@ -1,6 +1,6 @@
+dotnet tool uninstall CheckNpmPackages.DotNetCliTool --global
+
 dotnet tool install CheckNpmPackages.DotNetCliTool --global --add-source ./nupkg
 
 cd ../CheckNpmPackages.Tests/samples/reactjs
-CheckNpmPackages ./ --report-directory packages
-
-dotnet tool uninstall CheckNpmPackages.DotNetCliTool --global
+CheckNpmPackages ./ --report-directory packages --check-latest-patch --check-latest-minor --check-latest

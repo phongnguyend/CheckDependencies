@@ -1,6 +1,6 @@
+dotnet tool uninstall CheckNugetPackages.DotNetCliTool --global
+
 dotnet tool install CheckNugetPackages.DotNetCliTool --global --add-source ./nupkg
 
 cd ../CheckNugetPackages.Tests/samples/Monolith
-CheckNugetPackages ./ --report-directory packages
-
-dotnet tool uninstall CheckNugetPackages.DotNetCliTool --global
+CheckNugetPackages ./ --report-directory packages --check-latest-patch --check-latest-minor --check-latest

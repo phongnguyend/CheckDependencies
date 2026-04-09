@@ -45,6 +45,10 @@ public static class ReportsWriter
             generatedReports.Add(mdPath);
         }
 
+        // Generate upgrade command files if requested
+        var upgradeCommands = UpgradeCommandsGenerator.Generate(packageGroups, arguments, arguments.ReportDirectory);
+        generatedReports.AddRange(upgradeCommands);
+
         return generatedReports;
     }
 }
