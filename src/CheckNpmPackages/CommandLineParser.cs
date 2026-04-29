@@ -42,7 +42,7 @@ public static class CommandLineParser
         // Parse directories (all arguments before first parameter starting with --)
         while (i < args.Length && !args[i].StartsWith("--"))
         {
-            directories.Add(args[i]);
+            directories.Add(RemoveQuotes(args[i]));
             i++;
         }
 
@@ -63,7 +63,7 @@ public static class CommandLineParser
                 // Collect all report type values until next parameter or end
                 while (i < args.Length && !args[i].StartsWith("--"))
                 {
-                    var reportType = args[i].ToLowerInvariant();
+                    var reportType = RemoveQuotes(args[i]).ToLowerInvariant();
                     if (reportType == "csv" || reportType == "html" || reportType == "md")
                     {
                         if (!reportTypes.Contains(reportType))
@@ -83,7 +83,7 @@ public static class CommandLineParser
                 i++; // Move to next argument
                 if (i < args.Length && !args[i].StartsWith("--"))
                 {
-                    reportDirectory = args[i];
+                    reportDirectory = RemoveQuotes(args[i]);
                     i++;
                 }
                 else
@@ -130,5 +130,19 @@ public static class CommandLineParser
         }
 
         return new ParsedArguments(directories, reportTypes, reportDirectory, includeTransitive, checkLatestPatch, checkLatestMinor, checkLatest, includePrerelease);
+    }
+
+    private static string RemoveQuotes(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return value;
+
+        if ((value.StartsWith("\"") && value.EndsWith("\"")) ||
+            (value.StartsWith("'") && value.EndsWith("'")))
+        {
+            return value.Substring(1, value.Length - 2);
+        }
+
+        return value;
     }
 }
